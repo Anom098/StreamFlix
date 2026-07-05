@@ -461,6 +461,7 @@ function App() {
       {/* Auth Portal Modal */}
       {showAuth && (
         <AuthPortal 
+          apiUrl={API_URL}
           onAuthSuccess={handleAuthSuccess}
           onClose={() => setShowAuth(false)}
         />

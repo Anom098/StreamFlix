@@ -4,9 +4,10 @@ import { LogIn, UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
 interface AuthPortalProps {
   onAuthSuccess: (user: { id: string; username: string }) => void;
   onClose: () => void;
+  apiUrl?: string;
 }
 
-export const AuthPortal: React.FC<AuthPortalProps> = ({ onAuthSuccess, onClose }) => {
+export const AuthPortal: React.FC<AuthPortalProps> = ({ onAuthSuccess, onClose, apiUrl = 'http://localhost:5000' }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -34,7 +35,7 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({ onAuthSuccess, onClose }
 
     try {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`${apiUrl}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
