@@ -274,7 +274,7 @@ function App() {
       )}
 
       {/* Category Selection Filter Bar */}
-      <div className="category-bar" style={{ marginTop: heroMovie && selectedCategory === 'All' && searchQuery === '' ? '0' : '90px' }}>
+      <div className="category-bar" style={{ paddingTop: heroMovie && selectedCategory === 'All' && searchQuery === '' ? '2.5rem' : '140px', marginTop: 0 }}>
         {CATEGORIES.map((category) => (
           <button
             key={category}
