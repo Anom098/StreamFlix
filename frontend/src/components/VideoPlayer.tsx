@@ -7,6 +7,32 @@ interface VideoPlayerProps {
   title?: string;
 }
 
+/**
+ * Detects if a URL is a Google Drive link and extracts the file ID.
+ * Supports formats:
+ *   - https://drive.google.com/file/d/FILE_ID/view
+ *   - https://drive.google.com/file/d/FILE_ID/preview
+ *   - https://docs.google.com/uc?export=download&id=FILE_ID
+ *   - https://drive.google.com/open?id=FILE_ID
+ */
+function getGoogleDriveFileId(url: string): string | null {
+  if (!url) return null;
+
+  // Match /file/d/FILE_ID/
+  const fileMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileMatch) return fileMatch[1];
+
+  // Match id= parameter
+  const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (idMatch) return idMatch[1];
+
+  return null;
+}
+
+function isGoogleDriveUrl(url: string): boolean {
+  return getGoogleDriveFileId(url) !== null;
+}
+
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -20,9 +46,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
   const [isBuffering, setIsBuffering] = useState(false);
   const [showControls, setShowControls] = useState(true);
 
+  // Check if the source is a Google Drive link
+  const driveFileId = getGoogleDriveFileId(src);
+  const isDriveVideo = driveFileId !== null;
+  const driveEmbedUrl = isDriveVideo ? `https://drive.google.com/file/d/${driveFileId}/preview` : '';
+
   let controlsTimeout: number;
 
   useEffect(() => {
+    if (isDriveVideo) return; // Skip for Drive embeds (iframe handles its own playback)
+
     const video = videoRef.current;
     if (!video) return;
 
@@ -54,7 +87,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('playing', handlePlaying);
     };
-  }, [src]);
+  }, [src, isDriveVideo]);
 
   const togglePlay = () => {
     if (!videoRef.current) return;
@@ -130,6 +163,55 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
     }, 3000);
   };
 
+  // ===================== GOOGLE DRIVE EMBED =====================
+  if (isDriveVideo) {
+    return (
+      <div
+        ref={containerRef}
+        className="video-player-container"
+        style={{ position: 'relative' }}
+      >
+        {/* Title Header */}
+        {title && (
+          <div className="video-controls-header" style={{ opacity: 1 }}>
+            <span style={{ fontWeight: 600, color: '#fff', fontSize: '1.1rem' }}>{title}</span>
+          </div>
+        )}
+
+        <iframe
+          src={driveEmbedUrl}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            borderRadius: '8px',
+            minHeight: '400px',
+          }}
+          allow="autoplay; encrypted-media; fullscreen"
+          allowFullScreen
+        />
+
+        {/* Fullscreen Button for Drive Embeds */}
+        <button
+          onClick={toggleFullscreen}
+          className="video-btn"
+          style={{
+            position: 'absolute',
+            bottom: '12px',
+            right: '12px',
+            background: 'rgba(0,0,0,0.7)',
+            borderRadius: '6px',
+            padding: '0.5rem',
+            zIndex: 10,
+          }}
+        >
+          {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+        </button>
+      </div>
+    );
+  }
+
+  // ===================== STANDARD VIDEO PLAYER =====================
   return (
     <div 
       ref={containerRef}
