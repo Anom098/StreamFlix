@@ -292,6 +292,69 @@ app.post('/api/admin/add-url', (req, res) => {
   );
 });
 
+// --- Admin Edit Movie Route ---
+app.put('/api/admin/movies/:id', (req, res) => {
+  const { title, description, category, duration, year, trending, videoUrl, thumbnailUrl, rating } = req.body;
+  const movieId = req.params.id;
+
+  // Build dynamic update query based on provided fields
+  const fields = [];
+  const values = [];
+
+  if (title !== undefined) { fields.push('title = ?'); values.push(title); }
+  if (description !== undefined) { fields.push('description = ?'); values.push(description); }
+  if (category !== undefined) { fields.push('category = ?'); values.push(category); }
+  if (duration !== undefined) { fields.push('duration = ?'); values.push(duration); }
+  if (year !== undefined) { fields.push('year = ?'); values.push(year); }
+  if (trending !== undefined) { fields.push('trending = ?'); values.push(trending ? 1 : 0); }
+  if (videoUrl !== undefined) { fields.push('videoUrl = ?'); values.push(videoUrl); }
+  if (thumbnailUrl !== undefined) { fields.push('thumbnail = ?'); values.push(thumbnailUrl); }
+  if (rating !== undefined) { fields.push('rating = ?'); values.push(rating); }
+
+  if (fields.length === 0) {
+    return res.status(400).json({ message: 'No fields to update.' });
+  }
+
+  values.push(movieId);
+
+  db.run(
+    `UPDATE movies SET ${fields.join(', ')} WHERE id = ?`,
+    values,
+    function (err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ message: 'Movie not found.' });
+      }
+      res.json({ message: 'Movie updated successfully.' });
+    }
+  );
+});
+
+// --- Admin Delete Movie Route ---
+app.delete('/api/admin/movies/:id', (req, res) => {
+  const movieId = req.params.id;
+
+  // First remove any watchlist entries for this movie
+  db.run('DELETE FROM watchlist WHERE movieId = ?', [movieId], (err) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Then delete the movie itself
+    db.run('DELETE FROM movies WHERE id = ?', [movieId], function (err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ message: 'Movie not found.' });
+      }
+      res.json({ message: 'Movie deleted successfully.' });
+    });
+  });
+});
+
 // --- Video Stream Proxy & Range Streamer ---
 app.get('/api/stream/:id', (req, res) => {
   db.get('SELECT videoUrl FROM movies WHERE id = ?', [req.params.id], (err, row) => {
