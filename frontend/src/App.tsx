@@ -381,29 +381,7 @@ function App() {
               <div
                 className="modal-header"
                 style={{ backgroundImage: `url(${getAssetUrl(selectedMovie.thumbnail)})` }}
-              >
-                <div style={{ position: 'absolute', bottom: '2rem', left: '2.5rem', zIndex: 5, display: 'flex', gap: '1rem' }}>
-                  <button
-                    className="btn-primary"
-                    style={{ padding: '1rem 2.5rem', fontSize: '1.1rem' }}
-                    onClick={() => setIsPlaying(true)}
-                  >
-                    <Play size={20} fill="currentColor" /> Play Movie
-                  </button>
-
-                  <button 
-                    className="btn-secondary"
-                    onClick={(e) => handleToggleWatchlist(selectedMovie.id, e)}
-                    style={{ padding: '1rem 1.5rem', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)' }}
-                  >
-                    {isMovieInWatchlist(selectedMovie.id) ? (
-                      <Check size={20} style={{ color: 'var(--accent)' }} />
-                    ) : (
-                      <Plus size={20} />
-                    )}
-                  </button>
-                </div>
-              </div>
+              />
             )}
 
             {/* Movie Info Section */}
@@ -420,6 +398,29 @@ function App() {
                       {selectedMovie.category}
                     </span>
                   </div>
+                  
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+                    <button
+                      className="btn-primary"
+                      style={{ padding: '0.8rem 2rem', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                      onClick={() => setIsPlaying(true)}
+                    >
+                      <Play size={18} fill="currentColor" /> Play Movie
+                    </button>
+
+                    <button 
+                      className="btn-secondary"
+                      onClick={(e) => handleToggleWatchlist(selectedMovie.id, e)}
+                      style={{ padding: '0.8rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                      {isMovieInWatchlist(selectedMovie.id) ? (
+                        <Check size={18} style={{ color: 'var(--accent)' }} />
+                      ) : (
+                        <Plus size={18} />
+                      )}
+                    </button>
+                  </div>
+                  
                   <p className="modal-description">{selectedMovie.description}</p>
                 </div>
 
