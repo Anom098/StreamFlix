@@ -9,16 +9,16 @@ export const Logo: React.FC = () => {
         viewBox="0 0 100 100" 
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
-        style={{ filter: 'drop-shadow(0 4px 10px rgba(0, 210, 255, 0.45))' }}
+        style={{ filter: 'drop-shadow(0 4px 10px rgba(212, 175, 55, 0.45))' }}
       >
         <defs>
           <linearGradient id="cyanBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#00d2ff" />
-            <stop offset="100%" stopColor="#0066ff" />
+            <stop offset="0%" stopColor="#d4af37" />
+            <stop offset="100%" stopColor="#996515" />
           </linearGradient>
           <linearGradient id="pinkPurpleGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#ff007f" />
-            <stop offset="100%" stopColor="#7928ca" />
+            <stop offset="0%" stopColor="#ffd700" />
+            <stop offset="100%" stopColor="#b8860b" />
           </linearGradient>
           <filter id="glow">
             <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
@@ -55,20 +55,20 @@ export const Logo: React.FC = () => {
         />
 
         {/* Outer glowing center dot */}
-        <circle cx="50" cy="45" r="4" fill="#ffffff" style={{ filter: 'drop-shadow(0 0 4px #00d2ff)' }} />
+        <circle cx="50" cy="45" r="4" fill="#ffffff" style={{ filter: 'drop-shadow(0 0 4px #d4af37)' }} />
       </svg>
       <span 
         style={{ 
           fontSize: '1.45rem', 
           fontWeight: 900, 
           letterSpacing: '-0.03em', 
-          background: 'linear-gradient(135deg, #ffffff 30%, #00d2ff 100%)',
+          background: 'linear-gradient(135deg, #ffffff 30%, #d4af37 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           textTransform: 'uppercase'
         }}
       >
-        Stream<span style={{ color: '#00d2ff', WebkitTextFillColor: 'initial' }}>Flix</span>
+        Stream<span style={{ color: '#d4af37', WebkitTextFillColor: 'initial' }}>Flix</span>
       </span>
     </div>
   );
