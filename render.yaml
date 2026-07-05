@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: streamflix-backend
+    env: node
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_URL
+        sync: false  # You will fill this in after Vercel deployment

@@ -1,0 +1,33 @@
+# Root gitignore for StreamFlix monorepo
+
+# Node modules (both frontend and backend)
+node_modules/
+**/node_modules/
+
+# Build outputs
+frontend/dist/
+frontend/.vite/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Backend database (persistent data - don't commit, managed by Render's disk)
+backend/streamflix.db
+backend/streamflix.db-journal
+
+# Uploaded media files (stored in local backend - use Google Drive for production)
+backend/public/uploads/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor files
+.vscode/
+.idea/

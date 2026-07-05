@@ -1,0 +1,62 @@
+[
+  {
+    "id": "1",
+    "title": "Sintel",
+    "description": "A lonely young woman named Sintel rescues a baby dragon she names Scales. But when Scales is snatched away by an adult dragon, Sintel begins a desperate, epic quest to find her companion.",
+    "category": "Fantasy",
+    "thumbnail": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=60",
+    "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+    "duration": "14:48",
+    "rating": "4.8",
+    "year": "2010",
+    "trending": true
+  },
+  {
+    "id": "2",
+    "title": "Tears of Steel",
+    "description": "Set in a dystopian future, a group of scientists in Rotterdam try to rescue the world from destructive robots using a portal to the past. A visually stunning sci-fi short film.",
+    "category": "Sci-Fi",
+    "thumbnail": "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?w=800&auto=format&fit=crop&q=60",
+    "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+    "duration": "12:14",
+    "rating": "4.5",
+    "year": "2012",
+    "trending": true
+  },
+  {
+    "id": "3",
+    "title": "Big Buck Bunny",
+    "description": "A large and lovable rabbit deals with three bullying rodents who ruin his day and harass his forest friends. A classic animated comedy of sweet revenge.",
+    "category": "Animation",
+    "thumbnail": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=60",
+    "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    "duration": "9:56",
+    "rating": "4.2",
+    "year": "2008",
+    "trending": false
+  },
+  {
+    "id": "4",
+    "title": "Elephant's Dream",
+    "description": "A surreal animated tale of two characters, Proog and Emo, who explore a giant, strange, and chaotic machine world. It is the world's first open movie project.",
+    "category": "Sci-Fi",
+    "thumbnail": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=60",
+    "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    "duration": "10:53",
+    "rating": "4.0",
+    "year": "2006",
+    "trending": false
+  },
+  {
+    "id": "5",
+    "title": "For Bigger Blazes",
+    "description": "An action-filled short demonstration showcasing chromecast capabilities with extreme sporting events, showcasing high-speed climbing, base jumping, and stunts.",
+    "category": "Action",
+    "thumbnail": "https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=800&auto=format&fit=crop&q=60",
+    "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    "duration": "0:15",
+    "rating": "4.1",
+    "year": "2015",
+    "trending": true
+  }
+]
