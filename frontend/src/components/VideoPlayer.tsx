@@ -145,7 +145,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
         onClick={togglePlay}
         playsInline
         preload="auto"
-        crossOrigin="anonymous"
       />
 
       {/* Buffering Indicator */}
