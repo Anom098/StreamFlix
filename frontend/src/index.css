@@ -18,8 +18,8 @@
   --bg-primary: #07080a; 
   --bg-secondary: #0e1015; 
   --bg-card: #141720; 
-  --accent: #00d2ff; /* Electric Cyan */
-  --accent-hover: #38bdf8; /* Soft Ice Blue */
+  --accent: #d4af37; /* Premium Gold */
+  --accent-hover: #f3e5ab; /* Soft Vanilla Gold */
   --text-main: #f5f5f7;
   --text-muted: #8e95a5;
   
@@ -29,9 +29,9 @@
   --shadow-3d-flat: 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   --shadow-3d-raised: 0 15px 35px rgba(0, 0, 0, 0.65), 0 5px 15px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   --shadow-3d-button: 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
-  --shadow-3d-button-hover: 0 10px 20px rgba(0, 210, 255, 0.25), 0 4px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  --shadow-3d-button-hover: 0 10px 20px rgba(212, 175, 55, 0.25), 0 4px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   
-  --gradient-gold: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%); /* Sapphire gradient */
+  --gradient-gold: linear-gradient(135deg, #d4af37 0%, #996515 100%); /* True Gold gradient */
   --gradient-dark: linear-gradient(180deg, rgba(7, 8, 10, 0) 0%, #07080a 100%);
 }
 
@@ -134,7 +134,7 @@ input, textarea {
 
 .nav-search:focus-within {
   border-color: var(--accent);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 210, 255, 0.25);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 10px rgba(212, 175, 55, 0.25);
 }
 
 .nav-search input {
@@ -218,12 +218,12 @@ input, textarea {
 }
 
 .rating-badge {
-  background: rgba(0, 210, 255, 0.1);
+  background: rgba(212, 175, 55, 0.1);
   color: var(--accent);
   padding: 0.2rem 0.6rem;
   border-radius: 4px;
   font-weight: 700;
-  border: 1px solid rgba(0, 210, 255, 0.3);
+  border: 1px solid rgba(212, 175, 55, 0.3);
   font-size: 0.75rem;
   box-shadow: var(--shadow-3d-flat);
 }
@@ -348,7 +348,7 @@ input, textarea {
   height: 18px;
   background: var(--accent);
   border-radius: 2px;
-  box-shadow: 0 0 8px rgba(0, 210, 255, 0.6);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
 }
 
 .movies-grid {
@@ -382,7 +382,7 @@ input, textarea {
 .movie-card:hover {
   transform: translateY(-8px) rotateX(4deg) rotateY(-2deg);
   box-shadow: var(--shadow-3d-raised);
-  border-color: rgba(0, 210, 255, 0.5);
+  border-color: rgba(212, 175, 55, 0.5);
 }
 
 .movie-card img {
@@ -463,7 +463,7 @@ input, textarea {
 .spinner {
   width: 44px;
   height: 44px;
-  border: 3px solid rgba(0, 210, 255, 0.15);
+  border: 3px solid rgba(212, 175, 55, 0.15);
   border-top: 3px solid var(--accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -486,7 +486,7 @@ input, textarea {
   justify-content: center;
   color: #fff;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4), inset 0 1px 0 rgba(255,255,255,0.4);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4), inset 0 1px 0 rgba(255,255,255,0.4);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 15;
 }
@@ -494,7 +494,7 @@ input, textarea {
 .video-play-overlay:hover {
   transform: scale(1.08) translateZ(10px);
   background: var(--accent-hover);
-  box-shadow: 0 10px 25px rgba(0, 210, 255, 0.5), inset 0 1px 0 rgba(255,255,255,0.5);
+  box-shadow: 0 10px 25px rgba(212, 175, 55, 0.5), inset 0 1px 0 rgba(255,255,255,0.5);
 }
 
 .video-controls-header {
