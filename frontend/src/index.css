@@ -777,12 +777,15 @@ input, textarea {
   .modal-meta-row { flex-wrap: wrap; gap: 0.8rem; }
   .modal-close-btn { top: 1rem; right: 1rem; width: 32px; height: 32px; }
   
-  .video-controls-bar { padding: 0.8rem; gap: 0.4rem; }
-  .video-actions-left, .video-actions-right { gap: 0.6rem; }
-  .volume-container:hover .volume-slider { width: 40px; }
+  .video-controls-bar { padding: 0.5rem; gap: 0.2rem; }
+  .video-actions { flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; }
+  .video-actions-left, .video-actions-right { gap: 0.4rem; }
+  .volume-container:hover .volume-slider { width: 30px; }
   .volume-slider { width: 0; }
-  .video-btn svg { width: 16px; height: 16px; }
-  .video-time { font-size: 0.65rem; }
+  .video-btn svg { width: 14px; height: 14px; }
+  .video-time { font-size: 0.6rem; }
+  .video-timeline-container { gap: 0.5rem; }
+  .speed-selector { display: none; }
   
   .admin-grid-2, .admin-grid-3 { grid-template-columns: 1fr !important; gap: 1rem !important; }
 }

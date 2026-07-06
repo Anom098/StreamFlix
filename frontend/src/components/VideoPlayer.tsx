@@ -305,6 +305,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
           <div className="video-actions-right">
             {/* Speed Selector */}
             <select
+              className="speed-selector"
               value={playbackSpeed}
               onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
               style={{
