@@ -189,38 +189,21 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
         />
 
         {/* Fullscreen Button for Drive Embeds */}
-        <div style={{ position: 'absolute', bottom: '12px', right: '12px', display: 'flex', gap: '8px', zIndex: 10 }}>
-          <a
-            href={`https://drive.google.com/file/d/${driveFileId}/view`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="video-btn"
-            style={{
-              background: 'rgba(0,0,0,0.7)',
-              borderRadius: '6px',
-              padding: '0.5rem 0.8rem',
-              color: '#fff',
-              textDecoration: 'none',
-              fontSize: '0.8rem',
-              display: 'flex',
-              alignItems: 'center',
-              fontWeight: 600,
-            }}
-          >
-            Open in Drive
-          </a>
-          <button
-            onClick={toggleFullscreen}
-            className="video-btn"
-            style={{
-              background: 'rgba(0,0,0,0.7)',
-              borderRadius: '6px',
-              padding: '0.5rem',
-            }}
-          >
-            {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
-          </button>
-        </div>
+        <button
+          onClick={toggleFullscreen}
+          className="video-btn"
+          style={{
+            position: 'absolute',
+            bottom: '12px',
+            right: '12px',
+            background: 'rgba(0,0,0,0.7)',
+            borderRadius: '6px',
+            padding: '0.5rem',
+            zIndex: 10,
+          }}
+        >
+          {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+        </button>
       </div>
     );
   }
