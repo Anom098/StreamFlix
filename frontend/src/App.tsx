@@ -385,7 +385,7 @@ function App() {
             )}
 
             {/* Movie Info Section */}
-            <div className="modal-body">
+            <div className="modal-body" style={{ marginTop: isPlaying ? '0' : undefined }}>
               <div className="modal-details-grid">
                 <div>
                   <h2 className="modal-title">{selectedMovie.title}</h2>
