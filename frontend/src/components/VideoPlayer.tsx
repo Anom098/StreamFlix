@@ -29,9 +29,6 @@ function getGoogleDriveFileId(url: string): string | null {
   return null;
 }
 
-function isGoogleDriveUrl(url: string): boolean {
-  return getGoogleDriveFileId(url) !== null;
-}
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
