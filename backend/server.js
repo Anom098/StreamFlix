@@ -116,7 +116,7 @@ app.post('/api/auth/register', (req, res) => {
   }
 
   db.run(
-    'INSERT INTO users (username, password) VALUES (?, ?)',
+    'INSERT INTO users (username, password, isAdmin) VALUES (?, ?, 0)',
     [username, password],
     function (err) {
       if (err) {
@@ -125,7 +125,7 @@ app.post('/api/auth/register', (req, res) => {
         }
         return res.status(500).json({ error: err.message });
       }
-      res.status(201).json({ id: this.lastID, username });
+      res.status(201).json({ id: this.lastID, username, isAdmin: false });
     }
   );
 });
@@ -147,7 +147,7 @@ app.post('/api/auth/login', (req, res) => {
       if (!row) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
-      res.json({ id: row.id, username: row.username });
+      res.json({ id: row.id, username: row.username, isAdmin: row.isAdmin === 1 });
     }
   );
 });
@@ -209,10 +209,23 @@ app.post('/api/watchlist/toggle', (req, res) => {
   );
 });
 
+// --- Admin Middleware ---
+function requireAdmin(req, res, next) {
+  const userId = req.headers['x-user-id'];
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+  db.get('SELECT isAdmin FROM users WHERE id = ?', [userId], (err, row) => {
+    if (err || !row || row.isAdmin !== 1) {
+      return res.status(403).json({ message: 'Forbidden: Admin access only' });
+    }
+    next();
+  });
+}
+
 // --- Admin Upload Routes ---
 
 app.post(
   '/api/admin/upload',
+  requireAdmin,
   upload.fields([
     { name: 'video', maxCount: 1 },
     { name: 'thumbnail', maxCount: 1 },
@@ -259,7 +272,7 @@ app.post(
 );
 
 // --- Admin URL-only Route (For Google Drive / external video URLs) ---
-app.post('/api/admin/add-url', (req, res) => {
+app.post('/api/admin/add-url', requireAdmin, (req, res) => {
   const { title, description, category, duration, year, trending, videoUrl, thumbnailUrl } = req.body;
 
   if (!title || !description || !videoUrl || !thumbnailUrl) {
@@ -293,7 +306,7 @@ app.post('/api/admin/add-url', (req, res) => {
 });
 
 // --- Admin Edit Movie Route ---
-app.put('/api/admin/movies/:id', (req, res) => {
+app.put('/api/admin/movies/:id', requireAdmin, (req, res) => {
   const { title, description, category, duration, year, trending, videoUrl, thumbnailUrl, rating } = req.body;
   const movieId = req.params.id;
 
@@ -333,7 +346,7 @@ app.put('/api/admin/movies/:id', (req, res) => {
 });
 
 // --- Admin Delete Movie Route ---
-app.delete('/api/admin/movies/:id', (req, res) => {
+app.delete('/api/admin/movies/:id', requireAdmin, (req, res) => {
   const movieId = req.params.id;
 
   // First remove any watchlist entries for this movie

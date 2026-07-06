@@ -18,11 +18,12 @@ interface AdminDashboardProps {
   onClose: () => void;
   onUploadSuccess: () => void;
   apiUrl?: string;
+  userId?: string;
 }
 
 type Mode = 'upload' | 'url' | 'manage';
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploadSuccess, apiUrl = 'http://localhost:5000' }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploadSuccess, apiUrl = 'http://localhost:5000', userId }) => {
   const [mode, setMode] = useState<Mode>('url'); // Default to URL mode for cloud deployments
 
   // Shared metadata
@@ -114,7 +115,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
     try {
       const response = await fetch(`${apiUrl}/api/admin/add-url`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
         body: JSON.stringify({ title, description, category, duration, year, trending, videoUrl, thumbnailUrl }),
       });
 
@@ -164,6 +165,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
 
       const response = await fetch(`${apiUrl}/api/admin/upload`, {
         method: 'POST',
+        headers: { 'x-user-id': userId || '' },
         body: formData,
       });
 
@@ -188,7 +190,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
     if (!window.confirm('Are you sure you want to delete this movie? This action cannot be undone.')) return;
 
     try {
-      const response = await fetch(`${apiUrl}/api/admin/movies/${movieId}`, { method: 'DELETE' });
+      const response = await fetch(`${apiUrl}/api/admin/movies/${movieId}`, { method: 'DELETE', headers: { 'x-user-id': userId || '' } });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to delete');
       setSuccess('Movie deleted successfully!');
@@ -228,7 +230,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
     try {
       const response = await fetch(`${apiUrl}/api/admin/movies/${editingMovie.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
         body: JSON.stringify(editForm),
       });
 

@@ -33,7 +33,7 @@ function App() {
   const [heroMovie, setHeroMovie] = useState<Movie | null>(null);
 
   // Authentication & Watchlist states
-  const [user, setUser] = useState<{ id: string; username: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; username: string; isAdmin: boolean } | null>(null);
   const [watchlist, setWatchlist] = useState<Movie[]>([]);
   const [showAuth, setShowAuth] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -112,7 +112,7 @@ function App() {
     setIsPlaying(false);
   };
 
-  const handleAuthSuccess = (userData: { id: string; username: string }) => {
+  const handleAuthSuccess = (userData: { id: string; username: string; isAdmin: boolean }) => {
     setUser(userData);
     localStorage.setItem('streamflix_user', JSON.stringify(userData));
     fetchWatchlist(userData.id);
@@ -181,14 +181,16 @@ function App() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {user ? (
             <>
-              {/* Admin Portal Toggle (For demonstration, any logged-in user can access admin controls) */}
-              <button 
-                onClick={() => setShowAdmin(true)} 
-                className="btn-secondary" 
-                style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-              >
-                <Shield size={14} /> Admin
-              </button>
+              {/* Admin Portal Toggle — only shown to admin users */}
+              {user.isAdmin && (
+                <button 
+                  onClick={() => setShowAdmin(true)} 
+                  className="btn-secondary" 
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <Shield size={14} /> Admin
+                </button>
+              )}
               
               <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>
                 {user.username}
@@ -471,6 +473,7 @@ function App() {
       {showAdmin && (
         <AdminDashboard 
           apiUrl={API_URL}
+          userId={user?.id}
           onUploadSuccess={fetchMovies}
           onClose={() => setShowAdmin(false)}
         />

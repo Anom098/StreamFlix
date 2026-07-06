@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { LogIn, UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface AuthPortalProps {
-  onAuthSuccess: (user: { id: string; username: string }) => void;
+  onAuthSuccess: (user: { id: string; username: string; isAdmin: boolean }) => void;
   onClose: () => void;
   apiUrl?: string;
 }
@@ -50,7 +50,7 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({ onAuthSuccess, onClose, 
       if (isLogin) {
         setSuccess('Logged in successfully!');
         setTimeout(() => {
-          onAuthSuccess({ id: data.id.toString(), username: data.username });
+          onAuthSuccess({ id: data.id.toString(), username: data.username, isAdmin: data.isAdmin === true });
           onClose();
         }, 1000);
       } else {

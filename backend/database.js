@@ -35,9 +35,18 @@ function initTables() {
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
+        password TEXT NOT NULL,
+        isAdmin INTEGER DEFAULT 0
       )
-    `);
+    `, () => {
+      // Add isAdmin column to existing databases that don't have it
+      db.run(`ALTER TABLE users ADD COLUMN isAdmin INTEGER DEFAULT 0`, () => {});
+      // Ensure default admin account always exists
+      db.run(
+        `INSERT OR IGNORE INTO users (username, password, isAdmin) VALUES (?, ?, 1)`,
+        [process.env.ADMIN_USERNAME || 'admin', process.env.ADMIN_PASSWORD || 'admin123']
+      );
+    });
 
     // 3. Watchlist Table
     db.run(`
