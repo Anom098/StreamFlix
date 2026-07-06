@@ -379,7 +379,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
                   </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                <div className="admin-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                   <div>
                     <label style={labelStyle}><Film size={12} /> Movie Title</label>
                     <input type="text" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} style={inputStyle} />
@@ -400,7 +400,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
                   <textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem' }}>
+                <div className="admin-grid-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem' }}>
                   <div>
                     <label style={labelStyle}><Clock size={12} /> Duration</label>
                     <input type="text" value={editForm.duration} onChange={(e) => setEditForm({ ...editForm, duration: e.target.value })} style={inputStyle} />
@@ -555,7 +555,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
         {(mode === 'url' || mode === 'upload') && (
           <form onSubmit={mode === 'url' ? handleSubmitUrl : handleSubmitUpload} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+            <div className="admin-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
               <div>
                 <label style={labelStyle}><Film size={12} /> Movie Title</label>
                 <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Inception" style={inputStyle} />
@@ -577,7 +577,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
                 style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+            <div className="admin-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
               <div>
                 <label style={labelStyle}><Clock size={12} /> Duration</label>
                 <input type="text" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 2:18 or 14:48" style={inputStyle} />
@@ -610,7 +610,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
 
             {/* File Upload Mode Fields */}
             {mode === 'upload' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', border: '1px dashed var(--border-light)', padding: '1.25rem', borderRadius: '8px', background: '#08090d' }}>
+              <div className="admin-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', border: '1px dashed var(--border-light)', padding: '1.25rem', borderRadius: '8px', background: '#08090d' }}>
                 <div>
                   <label style={labelStyle}>Poster Image</label>
                   <input id="admin-thumb-input" type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'thumbnail')} style={{ fontSize: '0.8rem', color: '#8e95a5' }} />

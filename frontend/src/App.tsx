@@ -399,7 +399,7 @@ function App() {
                     </span>
                   </div>
                   
-                  <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+                  <div className="hero-buttons" style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
                     <button
                       className="btn-primary"
                       style={{ padding: '0.8rem 2rem', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
