@@ -188,22 +188,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
           allowFullScreen
         />
 
-        {/* Fullscreen Button for Drive Embeds */}
-        <button
-          onClick={toggleFullscreen}
-          className="video-btn"
-          style={{
-            position: 'absolute',
-            bottom: '12px',
-            right: '12px',
-            background: 'rgba(0,0,0,0.7)',
-            borderRadius: '6px',
-            padding: '0.5rem',
-            zIndex: 10,
-          }}
-        >
-          {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
-        </button>
       </div>
     );
   }
