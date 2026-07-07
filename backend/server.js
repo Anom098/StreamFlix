@@ -68,14 +68,15 @@ app.get('/api/movies', (req, res) => {
   const { category, search } = req.query;
   let query = 'SELECT * FROM movies WHERE 1=1';
   const params = [];
+  let idx = 1;
 
   if (category && category !== 'All') {
-    query += ' AND LOWER(category) = LOWER(?)';
+    query += ` AND LOWER(category) = LOWER($${idx++})`;
     params.push(category);
   }
 
   if (search) {
-    query += ' AND (LOWER(title) LIKE ? OR LOWER(description) LIKE ?)';
+    query += ` AND (LOWER(title) LIKE $${idx++} OR LOWER(description) LIKE $${idx++})`;
     const searchParam = `%${search.toLowerCase()}%`;
     params.push(searchParam, searchParam);
   }
@@ -84,7 +85,6 @@ app.get('/api/movies', (req, res) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
-    // Convert trending 1/0 to true/false for frontend
     const result = rows.map((row) => ({
       ...row,
       trending: row.trending === 1,
@@ -95,7 +95,7 @@ app.get('/api/movies', (req, res) => {
 
 // Get single movie
 app.get('/api/movies/:id', (req, res) => {
-  db.get('SELECT * FROM movies WHERE id = ?', [req.params.id], (err, row) => {
+  db.get('SELECT * FROM movies WHERE id = $1', [req.params.id], (err, row) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -116,11 +116,11 @@ app.post('/api/auth/register', (req, res) => {
   }
 
   db.run(
-    'INSERT INTO users (username, password, isAdmin) VALUES (?, ?, 0)',
+    'INSERT INTO users (username, password, "isAdmin") VALUES ($1, $2, 0) RETURNING id',
     [username, password],
     function (err) {
       if (err) {
-        if (err.message.includes('UNIQUE constraint failed')) {
+        if (err.message && err.message.includes('unique')) {
           return res.status(400).json({ message: 'Username already exists' });
         }
         return res.status(500).json({ error: err.message });
@@ -138,7 +138,7 @@ app.post('/api/auth/login', (req, res) => {
   }
 
   db.get(
-    'SELECT * FROM users WHERE username = ? AND password = ?',
+    'SELECT * FROM users WHERE username = $1 AND password = $2',
     [username, password],
     (err, row) => {
       if (err) {
@@ -158,8 +158,8 @@ app.post('/api/auth/login', (req, res) => {
 app.get('/api/watchlist/:userId', (req, res) => {
   const query = `
     SELECT m.* FROM movies m
-    INNER JOIN watchlist w ON m.id = w.movieId
-    WHERE w.userId = ?
+    INNER JOIN watchlist w ON m.id = w."movieId"
+    WHERE w."userId" = $1
   `;
   db.all(query, [req.params.userId], (err, rows) => {
     if (err) {
@@ -177,7 +177,7 @@ app.post('/api/watchlist/toggle', (req, res) => {
   }
 
   db.get(
-    'SELECT * FROM watchlist WHERE userId = ? AND movieId = ?',
+    'SELECT * FROM watchlist WHERE "userId" = $1 AND "movieId" = $2',
     [userId, movieId],
     (err, row) => {
       if (err) {
@@ -187,7 +187,7 @@ app.post('/api/watchlist/toggle', (req, res) => {
       if (row) {
         // Remove
         db.run(
-          'DELETE FROM watchlist WHERE userId = ? AND movieId = ?',
+          'DELETE FROM watchlist WHERE "userId" = $1 AND "movieId" = $2',
           [userId, movieId],
           (err) => {
             if (err) return res.status(500).json({ error: err.message });
@@ -197,7 +197,7 @@ app.post('/api/watchlist/toggle', (req, res) => {
       } else {
         // Add
         db.run(
-          'INSERT INTO watchlist (userId, movieId) VALUES (?, ?)',
+          'INSERT INTO watchlist ("userId", "movieId") VALUES ($1, $2)',
           [userId, movieId],
           (err) => {
             if (err) return res.status(500).json({ error: err.message });
@@ -213,7 +213,7 @@ app.post('/api/watchlist/toggle', (req, res) => {
 function requireAdmin(req, res, next) {
   const userId = req.headers['x-user-id'];
   if (!userId) return res.status(401).json({ message: 'Unauthorized' });
-  db.get('SELECT isAdmin FROM users WHERE id = ?', [userId], (err, row) => {
+  db.get('SELECT "isAdmin" FROM users WHERE id = $1', [userId], (err, row) => {
     if (err || !row || row.isAdmin !== 1) {
       return res.status(403).json({ message: 'Forbidden: Admin access only' });
     }
@@ -232,7 +232,7 @@ app.post(
   ]),
   (req, res) => {
     const { title, description, category, duration, year, trending } = req.body;
-    
+
     if (!req.files || !req.files.video || !req.files.thumbnail) {
       return res.status(400).json({ message: 'Video and thumbnail files are required' });
     }
@@ -240,21 +240,15 @@ app.post(
     const videoFile = req.files.video[0];
     const thumbnailFile = req.files.thumbnail[0];
 
-    // Generate static server URLs for uploads
     const videoUrl = `/uploads/videos/${videoFile.filename}`;
     const thumbnailUrl = `/uploads/thumbnails/${thumbnailFile.filename}`;
 
     db.run(
-      `INSERT INTO movies (title, description, category, thumbnail, videoUrl, duration, rating, year, trending)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO movies (title, description, category, thumbnail, "videoUrl", duration, rating, year, trending)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
       [
-        title,
-        description,
-        category,
-        thumbnailUrl,
-        videoUrl,
-        duration || '10:00',
-        '4.5',
+        title, description, category, thumbnailUrl, videoUrl,
+        duration || '10:00', '4.5',
         year || new Date().getFullYear().toString(),
         trending === 'true' || trending === '1' ? 1 : 0,
       ],
@@ -262,10 +256,7 @@ app.post(
         if (err) {
           return res.status(500).json({ error: err.message });
         }
-        res.status(201).json({
-          message: 'Movie uploaded successfully',
-          movieId: this.lastID,
-        });
+        res.status(201).json({ message: 'Movie uploaded successfully', movieId: this.lastID });
       }
     );
   }
@@ -280,16 +271,11 @@ app.post('/api/admin/add-url', requireAdmin, (req, res) => {
   }
 
   db.run(
-    `INSERT INTO movies (title, description, category, thumbnail, videoUrl, duration, rating, year, trending)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO movies (title, description, category, thumbnail, "videoUrl", duration, rating, year, trending)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
     [
-      title,
-      description,
-      category || 'Action',
-      thumbnailUrl,
-      videoUrl,
-      duration || '10:00',
-      '4.5',
+      title, description, category || 'Action', thumbnailUrl, videoUrl,
+      duration || '10:00', '4.5',
       year || new Date().getFullYear().toString(),
       trending ? 1 : 0,
     ],
@@ -297,10 +283,7 @@ app.post('/api/admin/add-url', requireAdmin, (req, res) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
-      res.status(201).json({
-        message: 'Movie added successfully via URL',
-        movieId: this.lastID,
-      });
+      res.status(201).json({ message: 'Movie added successfully via URL', movieId: this.lastID });
     }
   );
 });
@@ -310,19 +293,19 @@ app.put('/api/admin/movies/:id', requireAdmin, (req, res) => {
   const { title, description, category, duration, year, trending, videoUrl, thumbnailUrl, rating } = req.body;
   const movieId = req.params.id;
 
-  // Build dynamic update query based on provided fields
   const fields = [];
   const values = [];
+  let idx = 1;
 
-  if (title !== undefined) { fields.push('title = ?'); values.push(title); }
-  if (description !== undefined) { fields.push('description = ?'); values.push(description); }
-  if (category !== undefined) { fields.push('category = ?'); values.push(category); }
-  if (duration !== undefined) { fields.push('duration = ?'); values.push(duration); }
-  if (year !== undefined) { fields.push('year = ?'); values.push(year); }
-  if (trending !== undefined) { fields.push('trending = ?'); values.push(trending ? 1 : 0); }
-  if (videoUrl !== undefined) { fields.push('videoUrl = ?'); values.push(videoUrl); }
-  if (thumbnailUrl !== undefined) { fields.push('thumbnail = ?'); values.push(thumbnailUrl); }
-  if (rating !== undefined) { fields.push('rating = ?'); values.push(rating); }
+  if (title !== undefined) { fields.push(`title = $${idx++}`); values.push(title); }
+  if (description !== undefined) { fields.push(`description = $${idx++}`); values.push(description); }
+  if (category !== undefined) { fields.push(`category = $${idx++}`); values.push(category); }
+  if (duration !== undefined) { fields.push(`duration = $${idx++}`); values.push(duration); }
+  if (year !== undefined) { fields.push(`year = $${idx++}`); values.push(year); }
+  if (trending !== undefined) { fields.push(`trending = $${idx++}`); values.push(trending ? 1 : 0); }
+  if (videoUrl !== undefined) { fields.push(`"videoUrl" = $${idx++}`); values.push(videoUrl); }
+  if (thumbnailUrl !== undefined) { fields.push(`thumbnail = $${idx++}`); values.push(thumbnailUrl); }
+  if (rating !== undefined) { fields.push(`rating = $${idx++}`); values.push(rating); }
 
   if (fields.length === 0) {
     return res.status(400).json({ message: 'No fields to update.' });
@@ -331,7 +314,7 @@ app.put('/api/admin/movies/:id', requireAdmin, (req, res) => {
   values.push(movieId);
 
   db.run(
-    `UPDATE movies SET ${fields.join(', ')} WHERE id = ?`,
+    `UPDATE movies SET ${fields.join(', ')} WHERE id = $${idx}`,
     values,
     function (err) {
       if (err) {
@@ -349,14 +332,12 @@ app.put('/api/admin/movies/:id', requireAdmin, (req, res) => {
 app.delete('/api/admin/movies/:id', requireAdmin, (req, res) => {
   const movieId = req.params.id;
 
-  // First remove any watchlist entries for this movie
-  db.run('DELETE FROM watchlist WHERE movieId = ?', [movieId], (err) => {
+  db.run('DELETE FROM watchlist WHERE "movieId" = $1', [movieId], (err) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
 
-    // Then delete the movie itself
-    db.run('DELETE FROM movies WHERE id = ?', [movieId], function (err) {
+    db.run('DELETE FROM movies WHERE id = $1', [movieId], function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
@@ -370,16 +351,14 @@ app.delete('/api/admin/movies/:id', requireAdmin, (req, res) => {
 
 // --- Video Stream Proxy & Range Streamer ---
 app.get('/api/stream/:id', (req, res) => {
-  db.get('SELECT videoUrl FROM movies WHERE id = ?', [req.params.id], (err, row) => {
+  db.get('SELECT "videoUrl" FROM movies WHERE id = $1', [req.params.id], (err, row) => {
     if (err || !row) {
       return res.status(404).json({ message: 'Video not found' });
     }
 
     let videoUrl = row.videoUrl;
 
-    // Handle relative local upload paths (e.g. /uploads/videos/...)
-    if (videoUrl.startsWith('/uploads')) {
-      // Local file
+    if (videoUrl && videoUrl.startsWith('/uploads')) {
       const videoPath = path.join(__dirname, 'public', videoUrl);
       if (!fs.existsSync(videoPath)) {
         return res.status(404).json({ message: 'Video file on server not found' });
@@ -407,7 +386,6 @@ app.get('/api/stream/:id', (req, res) => {
           'Content-Length': chunksize,
           'Content-Type': 'video/mp4',
         };
-
         res.writeHead(206, head);
         file.pipe(res);
       } else {
@@ -419,7 +397,6 @@ app.get('/api/stream/:id', (req, res) => {
         fs.createReadStream(videoPath).pipe(res);
       }
     } else {
-      // Redirect to external Google bucket URL or online media URL
       res.redirect(videoUrl);
     }
   });

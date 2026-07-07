@@ -1,28 +1,25 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { Pool } = require('pg');
 const initialMovies = require('./data/movies.json');
 
-const dbPath = path.join(__dirname, 'streamflix.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error opening database:', err);
-  } else {
-    console.log('Connected to SQLite database at:', dbPath);
-    initTables();
-  }
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });
 
-function initTables() {
-  db.serialize(() => {
+async function initTables() {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
     // 1. Movies Table
-    db.run(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS movies (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         title TEXT NOT NULL,
         description TEXT,
         category TEXT,
         thumbnail TEXT,
-        videoUrl TEXT,
+        "videoUrl" TEXT,
         duration TEXT,
         rating TEXT,
         year TEXT,
@@ -31,70 +28,95 @@ function initTables() {
     `);
 
     // 2. Users Table
-    db.run(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
-        isAdmin INTEGER DEFAULT 0
+        "isAdmin" INTEGER DEFAULT 0
       )
-    `, () => {
-      // Add isAdmin column to existing databases that don't have it
-      db.run(`ALTER TABLE users ADD COLUMN isAdmin INTEGER DEFAULT 0`, () => {});
-      // Ensure default admin account always exists
-      db.run(
-        `INSERT OR IGNORE INTO users (username, password, isAdmin) VALUES (?, ?, 1)`,
-        [process.env.ADMIN_USERNAME || 'admin', process.env.ADMIN_PASSWORD || 'admin123']
-      );
-    });
+    `);
 
     // 3. Watchlist Table
-    db.run(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS watchlist (
-        userId INTEGER,
-        movieId INTEGER,
-        PRIMARY KEY (userId, movieId),
-        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (movieId) REFERENCES movies(id) ON DELETE CASCADE
+        "userId" INTEGER,
+        "movieId" INTEGER,
+        PRIMARY KEY ("userId", "movieId"),
+        FOREIGN KEY ("userId") REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY ("movieId") REFERENCES movies(id) ON DELETE CASCADE
       )
-    `, () => {
-      seedMovies();
-    });
-  });
+    `);
+
+    await client.query('COMMIT');
+    console.log('Tables initialized successfully.');
+
+    await seedMovies(client);
+    await ensureAdminUser(client);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error initializing tables:', err);
+  } finally {
+    client.release();
+  }
 }
 
-function seedMovies() {
-  db.get('SELECT COUNT(*) as count FROM movies', (err, row) => {
-    if (err) {
-      console.error('Error checking movies count:', err);
-      return;
+async function seedMovies(client) {
+  const { rows } = await client.query('SELECT COUNT(*) as count FROM movies');
+  if (parseInt(rows[0].count) === 0) {
+    console.log('Seeding initial movies...');
+    for (const movie of initialMovies) {
+      await client.query(
+        `INSERT INTO movies (title, description, category, thumbnail, "videoUrl", duration, rating, year, trending)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [movie.title, movie.description, movie.category, movie.thumbnail,
+         movie.videoUrl, movie.duration, movie.rating, movie.year, movie.trending ? 1 : 0]
+      );
     }
+    console.log('Database seeded successfully!');
+  }
+}
 
-    if (row.count === 0) {
-      console.log('Seeding initial movies database...');
-      const stmt = db.prepare(`
-        INSERT INTO movies (title, description, category, thumbnail, videoUrl, duration, rating, year, trending)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
+async function ensureAdminUser(client) {
+  const adminUser = process.env.ADMIN_USERNAME || 'admin';
+  const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
+  await client.query(
+    `INSERT INTO users (username, password, "isAdmin") VALUES ($1, $2, 1)
+     ON CONFLICT (username) DO NOTHING`,
+    [adminUser, adminPass]
+  );
+  console.log(`Admin user '${adminUser}' ensured.`);
+}
 
-      initialMovies.forEach((movie) => {
-        stmt.run(
-          movie.title,
-          movie.description,
-          movie.category,
-          movie.thumbnail,
-          movie.videoUrl,
-          movie.duration,
-          movie.rating,
-          movie.year,
-          movie.trending ? 1 : 0
-        );
+// Initialize on startup
+initTables().catch(console.error);
+
+// Promisified helpers matching the sqlite3 interface style
+const db = {
+  all: (query, params, callback) => {
+    pool.query(query, params)
+      .then(result => callback(null, result.rows))
+      .catch(err => callback(err));
+  },
+  get: (query, params, callback) => {
+    pool.query(query, params)
+      .then(result => callback(null, result.rows[0] || null))
+      .catch(err => callback(err));
+  },
+  run: (query, params, callback) => {
+    pool.query(query, params)
+      .then(result => {
+        // Mimic sqlite3 `this` context with lastID and changes
+        const ctx = {
+          lastID: result.rows[0] ? result.rows[0].id : null,
+          changes: result.rowCount,
+        };
+        if (callback) callback.call(ctx, null);
+      })
+      .catch(err => {
+        if (callback) callback(err);
       });
-
-      stmt.finalize();
-      console.log('Database seeded successfully!');
-    }
-  });
-}
+  },
+};
 
 module.exports = db;
