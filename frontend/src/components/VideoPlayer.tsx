@@ -179,7 +179,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
           src={driveEmbedUrl}
           style={{
             width: '100%',
-            height: 'calc(100% + 60px)', // Make iframe taller to push Google Drive controls out of bounds
+            height: 'calc(100% + 120px)', // Make iframe taller to push Google Drive controls out of bounds
+            marginTop: '-60px', // Push iframe UP to hide Google Drive header which overlaps iOS buttons
             border: 'none',
             display: 'block'
           }}
