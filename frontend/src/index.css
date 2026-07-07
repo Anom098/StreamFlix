@@ -789,10 +789,4 @@ input, textarea {
   .admin-grid-2, .admin-grid-3 { grid-template-columns: 1fr !important; gap: 1rem !important; }
 }
 
-/* Tablet Optimizations */
-@media (max-width: 1024px) {
-  .video-player-container iframe {
-    min-height: 300px !important;
-    height: 50vh !important;
-  }
-}
+
