@@ -194,10 +194,29 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
             {title || 'Playing Video'}
           </span>
           <button 
-            onClick={() => {
-              setIsFullscreen(!isFullscreen);
-              // Force a re-render to catch window dimensions if needed
-              setTimeout(() => setPlaybackSpeed(playbackSpeed), 100); 
+            onClick={async () => {
+              if (!isFullscreen) {
+                try {
+                  const el = containerRef.current as any;
+                  if (el?.requestFullscreen) {
+                    await el.requestFullscreen();
+                  } else if (el?.webkitRequestFullscreen) {
+                    await el.webkitRequestFullscreen();
+                  }
+                } catch (e) {
+                  console.log('Native fullscreen not supported, falling back to CSS');
+                }
+                setIsFullscreen(true);
+              } else {
+                try {
+                  const doc = document as any;
+                  if (document.fullscreenElement || doc.webkitFullscreenElement) {
+                    if (document.exitFullscreen) await document.exitFullscreen();
+                    else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
+                  }
+                } catch (e) {}
+                setIsFullscreen(false);
+              }
             }}
             style={{
               background: 'rgba(0,0,0,0.6)',
