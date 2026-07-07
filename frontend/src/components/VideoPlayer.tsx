@@ -183,7 +183,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
             border: 'none',
             borderRadius: '8px',
           }}
-          allow="autoplay; encrypted-media; fullscreen"
+          allow="encrypted-media; fullscreen"
           allowFullScreen
         />
 
