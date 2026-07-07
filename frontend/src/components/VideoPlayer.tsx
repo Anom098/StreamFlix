@@ -165,67 +165,27 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
     return (
       <div
         ref={containerRef}
-        style={
-          isFullscreen 
-            ? {
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100vw',
-                height: '100vh',
-                zIndex: 9999,
-                background: '#000',
-              }
-            : {
-                width: '100%',
-                height: '60vh',
-                minHeight: '250px',
-                maxHeight: '500px',
-                background: '#000',
-                borderRadius: '12px',
-                overflow: 'hidden',
-                position: 'relative',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
-              }
-        }
+        style={{
+          width: '100%',
+          height: '60vh',
+          minHeight: '250px',
+          maxHeight: '500px',
+          background: '#000',
+          overflow: 'hidden',
+          position: 'relative',
+        }}
       >
-        {/* Custom Header with Fullscreen Button */}
-        <div className="video-controls-header" style={{ opacity: 1, zIndex: 10 }}>
-          <span style={{ fontWeight: 600, color: '#fff', fontSize: '1.1rem' }}>
-            {title || 'Playing Video'}
-          </span>
-          <button 
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            style={{
-              background: 'rgba(0,0,0,0.6)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              color: '#fff',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              fontWeight: 'bold'
-            }}
-          >
-            {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
-            {isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
-          </button>
-        </div>
-
         <iframe
           src={driveEmbedUrl}
           style={{
             width: '100%',
-            height: '100%',
+            height: 'calc(100% + 60px)', // Make iframe taller to push Google Drive controls out of bounds
             border: 'none',
-            borderRadius: '8px',
+            display: 'block'
           }}
           allow="encrypted-media; fullscreen"
           allowFullScreen
         />
-
       </div>
     );
   }
