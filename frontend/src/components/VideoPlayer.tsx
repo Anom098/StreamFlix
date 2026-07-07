@@ -195,6 +195,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
           </span>
           <button 
             onClick={async () => {
+              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+              
+              if (isIOS) {
+                alert("🍎 iPhone/iPad Detected: Apple prevents custom full-screen buttons. To enter Full Screen:\n\n1. Tap play\n2. Wait 3 seconds for the title to fade\n3. Tap the native arrows [↖ ↘] in the top-left corner\n\n(Or simply rotate your phone sideways!)");
+                return;
+              }
+
               if (!isFullscreen) {
                 try {
                   const el = containerRef.current as any;
