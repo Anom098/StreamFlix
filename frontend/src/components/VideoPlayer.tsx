@@ -166,7 +166,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
       <div
         ref={containerRef}
         className="video-player-container"
-        style={{ position: 'relative' }}
+        style={{ position: 'relative', minHeight: '280px' }}
       >
         {/* Title Header */}
         {title && (
