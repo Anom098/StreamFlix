@@ -46,6 +46,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
   // Check if the source is a Google Drive link
   const driveFileId = getGoogleDriveFileId(src);
   const isDriveVideo = driveFileId !== null;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const driveEmbedUrl = isDriveVideo ? `https://drive.google.com/file/d/${driveFileId}/preview` : '';
 
   let controlsTimeout: number;
@@ -161,7 +162,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
   };
 
   // ===================== GOOGLE DRIVE EMBED =====================
-  if (isDriveVideo) {
+if (isDriveVideo) {
+  // iOS: render native video element (allows true fullscreen)
+  if (isIOS) {
+    const directUrl = `https://drive.google.com/uc?export=download&id=${driveFileId}`;
     return (
       <div
         ref={containerRef}
@@ -169,11 +173,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
           isFullscreen
             ? {
                 position: 'fixed',
-                top: '50%',
-                left: '50%',
-                width: window.innerHeight > window.innerWidth ? '100vh' : '100vw',
-                height: window.innerHeight > window.innerWidth ? '100vw' : '100vh',
-                transform: window.innerHeight > window.innerWidth ? 'translate(-50%, -50%) rotate(90deg)' : 'translate(-50%, -50%)',
+                top: '0',
+                left: '0',
+                width: '100vw',
+                height: '100vh',
                 zIndex: 9999,
                 background: '#000',
               }
@@ -188,76 +191,105 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
               }
         }
       >
-        {/* Custom Header with Fullscreen Button */}
-        <div className="video-controls-header" style={{ opacity: 1, zIndex: 10, padding: '1rem', background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)' }}>
-          <span style={{ fontWeight: 600, color: '#fff', fontSize: '1.1rem' }}>
-            {title || 'Playing Video'}
-          </span>
-          <button 
-            onClick={async () => {
-              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-              
-              if (isIOS) {
-                alert("🍎 iPhone/iPad Detected: Apple prevents custom full-screen buttons. To enter Full Screen:\n\n1. Tap play\n2. Wait 3 seconds for the title to fade\n3. Tap the native arrows [↖ ↘] in the top-left corner\n\n(Or simply rotate your phone sideways!)");
-                return;
-              }
-
-              if (!isFullscreen) {
-                try {
-                  const el = containerRef.current as any;
-                  if (el?.requestFullscreen) {
-                    await el.requestFullscreen();
-                  } else if (el?.webkitRequestFullscreen) {
-                    await el.webkitRequestFullscreen();
-                  }
-                } catch (e) {
-                  console.log('Native fullscreen not supported, falling back to CSS');
-                }
-                setIsFullscreen(true);
-              } else {
-                try {
-                  const doc = document as any;
-                  if (document.fullscreenElement || doc.webkitFullscreenElement) {
-                    if (document.exitFullscreen) await document.exitFullscreen();
-                    else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
-                  }
-                } catch (e) {}
-                setIsFullscreen(false);
-              }
-            }}
-            style={{
-              background: 'rgba(0,0,0,0.6)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              color: '#fff',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              fontWeight: 'bold',
-              zIndex: 999
-            }}
-          >
-            {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
-            {isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
-          </button>
-        </div>
-
-        <iframe
-          src={driveEmbedUrl}
-          style={{
-            width: '100%',
-            height: 'calc(100% + 60px)', // Make iframe taller to push Google Drive controls out of bounds
-            border: 'none',
-            display: 'block'
-          }}
-          allow="encrypted-media; fullscreen"
-          allowFullScreen
+        <video
+          src={directUrl}
+          controls
+          autoPlay
+          muted={isMuted}
+          playsInline
+          style={{ width: '100%', height: '100%' }}
         />
       </div>
     );
   }
+
+  // non‑iOS: keep iframe with custom fullscreen button (no iOS alert)
+  return (
+    <div
+      ref={containerRef}
+      style={
+        isFullscreen
+          ? {
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              width: window.innerHeight > window.innerWidth ? '100vh' : '100vw',
+              height: window.innerHeight > window.innerWidth ? '100vw' : '100vh',
+              transform: window.innerHeight > window.innerWidth ? 'translate(-50%, -50%) rotate(90deg)' : 'translate(-50%, -50%)',
+              zIndex: 9999,
+              background: '#000',
+            }
+          : {
+              width: '100%',
+              height: '60vh',
+              minHeight: '250px',
+              maxHeight: '500px',
+              background: '#000',
+              overflow: 'hidden',
+              position: 'relative',
+            }
+      }
+    >
+      <div className="video-controls-header" style={{ opacity: 1, zIndex: 10, padding: '1rem', background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)' }}>
+        <span style={{ fontWeight: 600, color: '#fff', fontSize: '1.1rem' }}>{title || 'Playing Video'}</span>
+        <button
+          onClick={async () => {
+            if (!isFullscreen) {
+              try {
+                const el = containerRef.current as any;
+                if (el?.requestFullscreen) {
+                  await el.requestFullscreen();
+                } else if (el?.webkitRequestFullscreen) {
+                  await el.webkitRequestFullscreen();
+                }
+              } catch (e) {
+                console.log('Native fullscreen not supported, falling back to CSS');
+              }
+              setIsFullscreen(true);
+            } else {
+              try {
+                const doc = document as any;
+                if (document.fullscreenElement || doc.webkitFullscreenElement) {
+                  if (document.exitFullscreen) await document.exitFullscreen();
+                  else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
+                }
+              } catch (e) {}
+              setIsFullscreen(false);
+            }
+          }}
+          style={{
+            background: 'rgba(0,0,0,0.6)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            color: '#fff',
+            padding: '0.5rem 1rem',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontWeight: 'bold',
+            zIndex: 999,
+          }}
+        >
+          {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+          {isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
+        </button>
+      </div>
+
+      <iframe
+        src={driveEmbedUrl}
+        style={{
+          width: '100%',
+          height: 'calc(100% + 60px)', // push Google Drive UI out of view
+          border: 'none',
+          display: 'block',
+        }}
+        allow="encrypted-media; fullscreen"
+        allowFullScreen
+      />
+    </div>
+  );
+}
 
   // ===================== STANDARD VIDEO PLAYER =====================
   return (
