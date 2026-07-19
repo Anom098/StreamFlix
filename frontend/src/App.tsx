@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
-import { Search, Play, X, Star, Film, Clock, Calendar, Plus, Check, LogOut, Shield } from 'lucide-react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import {
+  Search, Play, X, Star, Clock, Calendar, Film,
+  Plus, Check, LogOut, Shield, ChevronLeft, Info
+} from 'lucide-react';
 import { VideoPlayer } from './components/VideoPlayer';
-import { Logo } from './components/Logo';
 import { AuthPortal } from './components/AuthPortal';
 import { AdminDashboard } from './components/AdminDashboard';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
 
 interface Movie {
   id: string;
@@ -23,99 +24,155 @@ interface Movie {
 
 const CATEGORIES = ['All', 'Fantasy', 'Sci-Fi', 'Animation', 'Action'];
 
-function App() {
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [filteredMovies, setFilteredMovies] = useState<Movie[]>([]);
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [heroMovie, setHeroMovie] = useState<Movie | null>(null);
+// ── Helper ─────────────────────────────────────────────────────────
+function getAssetUrl(url: string) {
+  if (url && url.startsWith('/uploads')) return `${API_URL}${url}`;
+  return url;
+}
 
-  // Authentication & Watchlist states
-  const [user, setUser] = useState<{ id: string; username: string; isAdmin: boolean } | null>(null);
+// ── Components ─────────────────────────────────────────────────────
+
+/** Horizontal scrollable rail of movie cards */
+function Rail({
+  title,
+  movies,
+  onSelect,
+  onWatchlist,
+  isInWatchlist,
+}: {
+  title: string;
+  movies: Movie[];
+  onSelect: (m: Movie) => void;
+  onWatchlist: (id: string, e: React.MouseEvent) => void;
+  isInWatchlist: (id: string) => boolean;
+}) {
+  if (movies.length === 0) return null;
+  return (
+    <div className="rail">
+      <div className="rail-header">
+        <span className="rail-title">{title}</span>
+      </div>
+      <div className="rail-track">
+        {movies.map((movie) => (
+          <div
+            key={movie.id}
+            className="card"
+            onClick={() => onSelect(movie)}
+            title={movie.title}
+          >
+            <img
+              className="card-thumb"
+              src={getAssetUrl(movie.thumbnail)}
+              alt={movie.title}
+              loading="lazy"
+            />
+            {/* Watchlist badge */}
+            <button
+              className={`card-wl-btn ${isInWatchlist(movie.id) ? 'active' : ''}`}
+              onClick={(e) => onWatchlist(movie.id, e)}
+              title={isInWatchlist(movie.id) ? 'Remove from Watchlist' : 'Add to Watchlist'}
+            >
+              {isInWatchlist(movie.id) ? <Check size={13} /> : <Plus size={13} />}
+            </button>
+            <div className="card-info">
+              <div className="card-title">{movie.title}</div>
+              <div className="card-meta">
+                <span className="star">★</span>
+                <span>{movie.rating}</span>
+                <span>•</span>
+                <span>{movie.year}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Main App ───────────────────────────────────────────────────────
+type View = 'home' | 'watch' | 'search';
+
+function App() {
+  // Data
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [watchlist, setWatchlist] = useState<Movie[]>([]);
+
+  // View routing
+  const [view, setView] = useState<View>('home');
+  const [watchMovie, setWatchMovie] = useState<Movie | null>(null);
+
+  // Hero rotation
+  const [heroIndex, setHeroIndex] = useState(0);
+  const heroMovies = movies.filter((m) => m.trending).slice(0, 5);
+  const heroMovie = heroMovies[heroIndex] ?? movies[movies.length - 1] ?? null;
+
+  // Search & filter
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Nav scroll
+  const [navScrolled, setNavScrolled] = useState(false);
+
+  // Auth
+  const [user, setUser] = useState<{ id: string; username: string; isAdmin: boolean } | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
 
-  const fetchMovies = async () => {
+  // ── Data fetching ─────────────────────────────────────────────
+  const fetchMovies = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/movies`);
-      const data = await response.json();
+      const res = await fetch(`${API_URL}/api/movies`);
+      const data: Movie[] = await res.json();
       setMovies(data);
-      setFilteredMovies(data);
-
-      // Set the latest trending movie as the hero movie
-      const trending = [...data].reverse().find((m: Movie) => m.trending);
-      if (trending) {
-        setHeroMovie(trending);
-      } else if (data.length > 0) {
-        setHeroMovie(data[data.length - 1]);
-      }
-    } catch (error) {
-      console.error('Error fetching movies:', error);
-    }
-  };
-
-  const fetchWatchlist = async (userId: string) => {
-    try {
-      const response = await fetch(`${API_URL}/api/watchlist/${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setWatchlist(data);
-      }
-    } catch (error) {
-      console.error('Error fetching watchlist:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchMovies();
-    // Load user session from local storage on mount
-    const savedUser = localStorage.getItem('streamflix_user');
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      setUser(parsedUser);
-      fetchWatchlist(parsedUser.id);
+    } catch (e) {
+      console.error('Failed to fetch movies', e);
     }
   }, []);
 
-  // Filter & search logic
+  const fetchWatchlist = useCallback(async (userId: string) => {
+    try {
+      const res = await fetch(`${API_URL}/api/watchlist/${userId}`);
+      if (res.ok) setWatchlist(await res.json());
+    } catch (e) {
+      console.error('Failed to fetch watchlist', e);
+    }
+  }, []);
+
   useEffect(() => {
-    let result = [...movies];
-
-    if (selectedCategory !== 'All') {
-      result = result.filter(
-        (m) => m.category.toLowerCase() === selectedCategory.toLowerCase()
-      );
+    fetchMovies();
+    const saved = localStorage.getItem('streamflix_user');
+    if (saved) {
+      const u = JSON.parse(saved);
+      setUser(u);
+      fetchWatchlist(u.id);
     }
+  }, [fetchMovies, fetchWatchlist]);
 
-    if (searchQuery.trim() !== '') {
-      const searchLower = searchQuery.toLowerCase();
-      result = result.filter(
-        (m) =>
-          m.title.toLowerCase().includes(searchLower) ||
-          m.description.toLowerCase().includes(searchLower)
-      );
-    }
+  // ── Hero rotation ──────────────────────────────────────────────
+  useEffect(() => {
+    if (heroMovies.length <= 1 || view !== 'home') return;
+    const t = setInterval(() => {
+      setHeroIndex((i) => (i + 1) % heroMovies.length);
+    }, 7000);
+    return () => clearInterval(t);
+  }, [heroMovies.length, view]);
 
-    setFilteredMovies(result);
-  }, [searchQuery, selectedCategory, movies]);
+  // ── Nav scroll ─────────────────────────────────────────────────
+  useEffect(() => {
+    const handler = () => setNavScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', handler, { passive: true });
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
 
-  const handleOpenDetails = (movie: Movie) => {
-    setSelectedMovie(movie);
-    setIsPlaying(false);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedMovie(null);
-    setIsPlaying(false);
-  };
-
+  // ── Auth helpers ───────────────────────────────────────────────
   const handleAuthSuccess = (userData: { id: string; username: string; isAdmin: boolean }) => {
     setUser(userData);
     localStorage.setItem('streamflix_user', JSON.stringify(userData));
     fetchWatchlist(userData.id);
+    setShowAuth(false);
   };
 
   const handleLogout = () => {
@@ -124,360 +181,517 @@ function App() {
     localStorage.removeItem('streamflix_user');
   };
 
+  // ── Watchlist ──────────────────────────────────────────────────
   const handleToggleWatchlist = async (movieId: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    if (!user) {
-      setShowAuth(true);
-      return;
-    }
-
+    e?.stopPropagation();
+    if (!user) { setShowAuth(true); return; }
     try {
-      const response = await fetch(`${API_URL}/api/watchlist/toggle`, {
-
+      const res = await fetch(`${API_URL}/api/watchlist/toggle`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, movieId }),
       });
-      if (response.ok) {
-        fetchWatchlist(user.id);
+      if (res.ok) fetchWatchlist(user.id);
+    } catch (e) {
+      console.error('Watchlist toggle error', e);
+    }
+  };
+
+  const isInWatchlist = (id: string) => watchlist.some((m) => m.id.toString() === id.toString());
+
+  // ── Navigation ─────────────────────────────────────────────────
+  const goWatch = (movie: Movie) => {
+    setWatchMovie(movie);
+    setView('watch');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const goHome = () => {
+    setView('home');
+    setWatchMovie(null);
+    setSearchQuery('');
+    setSearchOpen(false);
+  };
+
+  // Search open/close
+  const toggleSearch = () => {
+    setSearchOpen((o) => {
+      if (!o) {
+        setTimeout(() => searchInputRef.current?.focus(), 50);
+        setView('search');
+      } else {
+        setSearchQuery('');
+        if (view === 'search') setView('home');
       }
-    } catch (error) {
-      console.error('Error toggling watchlist:', error);
-    }
+      return !o;
+    });
   };
 
-  const isMovieInWatchlist = (movieId: string) => {
-    return watchlist.some((m) => m.id.toString() === movieId.toString());
+  const handleSearchChange = (q: string) => {
+    setSearchQuery(q);
+    if (q.trim()) setView('search');
+    else setView('home');
   };
 
-  const getAssetUrl = (url: string) => {
-    if (url && url.startsWith('/uploads')) {
-      return `${API_URL}${url}`;
-    }
-    return url;
-  };
+  // ── Derived lists ───────────────────────────────────────────────
+  const filteredByCategory =
+    selectedCategory === 'All'
+      ? movies
+      : movies.filter((m) => m.category.toLowerCase() === selectedCategory.toLowerCase());
 
-  return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', paddingBottom: '4rem' }}>
-      {/* Navigation Bar */}
-      <nav className="glass-nav">
-        <div onClick={() => {
-          setSelectedCategory('All');
-          setSearchQuery('');
-        }}>
-          <Logo />
-        </div>
-        <div className="nav-search">
-          <Search size={18} color="#8e95a5" />
-          <input
-            type="text"
-            placeholder="Search movies, genres..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        
-        {/* User Account Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {user ? (
-            <>
-              {/* Admin Portal Toggle — only shown to admin users */}
-              {user.isAdmin && (
-                <button 
-                  onClick={() => setShowAdmin(true)} 
-                  className="btn-secondary" 
-                  style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                >
-                  <Shield size={14} /> Admin
-                </button>
-              )}
-              
-              <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>
-                {user.username}
-              </span>
-              
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleLogout();
-                }} 
-                style={{ 
-                  background: 'rgba(229, 62, 62, 0.1)', 
-                  border: '1px solid rgba(229, 62, 62, 0.2)', 
-                  color: '#ef4444', 
-                  cursor: 'pointer', 
-                  display: 'inline-flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  padding: '0.6rem',
-                  borderRadius: '50%',
-                  outline: 'none',
-                  transition: 'background 0.2s'
-                }}
-                title="Logout"
-                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(229, 62, 62, 0.2)'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(229, 62, 62, 0.1)'}
-              >
-                <LogOut size={16} />
-              </button>
-            </>
-          ) : (
-            <button 
-              onClick={() => setShowAuth(true)} 
-              className="btn-primary" 
-              style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem', borderRadius: '20px' }}
-            >
-              Sign In
-            </button>
-          )}
-        </div>
-      </nav>
+  const searchResults = movies.filter(
+    (m) =>
+      m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-      {/* Hero Banner */}
-      {heroMovie && selectedCategory === 'All' && searchQuery === '' && (
-        <header
-          className="hero"
-          style={{ backgroundImage: `url(${getAssetUrl(heroMovie.thumbnail)})` }}
-        >
-          <div className="hero-content">
-            <h1 className="hero-title">{heroMovie.title}</h1>
-            <div className="hero-meta">
-              <span className="rating-badge">★ {heroMovie.rating}</span>
-              <span>{heroMovie.year}</span>
-              <span>•</span>
-              <span>{heroMovie.duration}</span>
-              <span>•</span>
-              <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{heroMovie.category}</span>
-            </div>
-            <p className="hero-desc">{heroMovie.description}</p>
-            <div className="hero-buttons">
-              <button className="btn-primary" onClick={() => handleOpenDetails(heroMovie)}>
-                <Play size={18} fill="currentColor" /> Play Now
-              </button>
-              
-              {/* Watchlist Toggle */}
-              <button 
-                className="btn-secondary" 
-                onClick={(e) => handleToggleWatchlist(heroMovie.id, e)}
-              >
-                {isMovieInWatchlist(heroMovie.id) ? (
-                  <>
-                    <Check size={18} style={{ color: 'var(--accent)' }} /> Watchlisted
-                  </>
-                ) : (
-                  <>
-                    <Plus size={18} /> Watchlist
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </header>
-      )}
+  const groupedByCategory: Record<string, Movie[]> = {};
+  CATEGORIES.filter((c) => c !== 'All').forEach((cat) => {
+    const list = movies.filter((m) => m.category.toLowerCase() === cat.toLowerCase());
+    if (list.length > 0) groupedByCategory[cat] = list;
+  });
 
-      {/* Category Selection Filter Bar */}
-      <div className="category-bar" style={{ paddingTop: heroMovie && selectedCategory === 'All' && searchQuery === '' ? '2.5rem' : '140px', marginTop: 0 }}>
-        {CATEGORIES.map((category) => (
-          <button
-            key={category}
-            className={`category-tab ${selectedCategory === category ? 'active' : ''}`}
-            onClick={() => setSelectedCategory(category)}
-          >
-            {category}
-          </button>
-        ))}
+  const trendingMovies = movies.filter((m) => m.trending);
+  const similarMovies = watchMovie
+    ? movies.filter((m) => m.category === watchMovie.category && m.id !== watchMovie.id)
+    : [];
+
+  // ── Nav bar ─────────────────────────────────────────────────────
+  const NavBar = () => (
+    <nav className={`nav ${navScrolled || view !== 'home' ? 'scrolled' : ''}`}>
+      {/* Logo */}
+      <div className="nav-logo" onClick={goHome}>
+        <span className="nav-logo-mark">SF</span>
+        <span className="nav-logo-text">StreamFlix</span>
       </div>
 
-      {/* User's Watchlist Rail (Only shown if user logged in and has items) */}
-      {user && watchlist.length > 0 && selectedCategory === 'All' && searchQuery === '' && (
-        <section className="movies-row" style={{ paddingBottom: '0' }}>
-          <h2>My Watchlist</h2>
-          <div className="movies-grid">
-            {watchlist.map((movie) => (
-              <div
-                key={`watchlist-${movie.id}`}
-                className="movie-card"
-                onClick={() => handleOpenDetails(movie)}
+      {/* Nav links — only on home */}
+      {view === 'home' && (
+        <ul className="nav-links">
+          <li>
+            <button
+              className={selectedCategory === 'All' ? 'active' : ''}
+              onClick={() => setSelectedCategory('All')}
+            >
+              Home
+            </button>
+          </li>
+          {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
+            <li key={cat}>
+              <button
+                className={selectedCategory === cat ? 'active' : ''}
+                onClick={() => setSelectedCategory(cat)}
               >
-                <img src={getAssetUrl(movie.thumbnail)} alt={movie.title} />
-                <div className="movie-card-overlay">
-                  <div className="movie-card-title">{movie.title}</div>
-                  <div className="movie-card-meta">
-                    <span>★ {movie.rating}</span>
-                    <span>{movie.year}</span>
-                    <span>{movie.duration}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+                {cat}
+              </button>
+            </li>
+          ))}
+          {user && (
+            <li>
+              <button
+                className={selectedCategory === '__watchlist__' ? 'active' : ''}
+                onClick={() => setSelectedCategory('__watchlist__')}
+              >
+                My List
+              </button>
+            </li>
+          )}
+        </ul>
       )}
 
-      {/* Main Movies Grid */}
-      <section className="movies-row">
-        <h2>
-          {selectedCategory === 'All'
-            ? searchQuery
-              ? 'Search Results'
-              : 'Featured Movies'
-            : `${selectedCategory} Movies`}
-        </h2>
+      {/* Right side */}
+      <div className="nav-right">
+        {/* Search */}
+        <div className="nav-search-wrap">
+          <input
+            ref={searchInputRef}
+            className={`nav-search-input ${searchOpen ? 'open' : ''}`}
+            placeholder="Titles, genres..."
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onKeyDown={(e) => e.key === 'Escape' && toggleSearch()}
+          />
+          <Search
+            size={18}
+            className="nav-search-icon"
+            onClick={toggleSearch}
+            style={{ cursor: 'pointer' }}
+          />
+        </div>
 
-        {filteredMovies.length === 0 ? (
-          <div style={{ padding: '3rem 0', textAlign: 'center', color: 'var(--text-muted)' }}>
-            No movies match your filters. Try search or category adjustments.
+        {/* User */}
+        {user ? (
+          <div className="nav-user">
+            {user.isAdmin && (
+              <button
+                className="btn-icon"
+                title="Admin"
+                onClick={() => setShowAdmin(true)}
+              >
+                <Shield size={15} />
+              </button>
+            )}
+            <span className="nav-user-name">{user.username}</span>
+            <button
+              className="btn-icon"
+              title="Sign out"
+              onClick={handleLogout}
+            >
+              <LogOut size={15} />
+            </button>
           </div>
         ) : (
-          <div className="movies-grid">
-            {filteredMovies.map((movie) => (
-              <div
-                key={movie.id}
-                className="movie-card"
-                onClick={() => handleOpenDetails(movie)}
-              >
-                <img src={getAssetUrl(movie.thumbnail)} alt={movie.title} />
-                <div className="movie-card-overlay">
-                  <div className="movie-card-title">{movie.title}</div>
-                  <div className="movie-card-meta">
-                    <span>★ {movie.rating}</span>
-                    <span>{movie.year}</span>
-                    <span>{movie.duration}</span>
-                  </div>
-                </div>
-              </div>
+          <button className="btn-nav" onClick={() => setShowAuth(true)}>
+            Sign In
+          </button>
+        )}
+      </div>
+    </nav>
+  );
+
+  // ── Hero banner ────────────────────────────────────────────────
+  const HeroBanner = () => {
+    if (!heroMovie) return null;
+    return (
+      <header className="hero">
+        <div
+          className="hero-bg"
+          style={{ backgroundImage: `url(${getAssetUrl(heroMovie.thumbnail)})` }}
+        />
+        <div className="hero-gradient" />
+
+        <div className="hero-content slide-up">
+          <div className="hero-badge">
+            <Star size={11} fill="currentColor" /> Trending
+          </div>
+          <h1 className="hero-title">{heroMovie.title}</h1>
+          <div className="hero-meta">
+            <span className="rating">★ {heroMovie.rating}</span>
+            <span className="dot">•</span>
+            <span>{heroMovie.year}</span>
+            <span className="dot">•</span>
+            <span>{heroMovie.duration}</span>
+            <span className="dot">•</span>
+            <span>{heroMovie.category}</span>
+          </div>
+          <p className="hero-desc">{heroMovie.description}</p>
+          <div className="hero-actions">
+            <button className="btn-play" onClick={() => goWatch(heroMovie)}>
+              <Play size={18} fill="currentColor" /> Play
+            </button>
+            <button className="btn-more" onClick={() => goWatch(heroMovie)}>
+              <Info size={18} /> More Info
+            </button>
+            <button
+              className={`btn-watchlist ${isInWatchlist(heroMovie.id) ? 'active' : ''}`}
+              onClick={(e) => handleToggleWatchlist(heroMovie.id, e)}
+            >
+              {isInWatchlist(heroMovie.id) ? <Check size={16} /> : <Plus size={16} />}
+              {isInWatchlist(heroMovie.id) ? 'In My List' : 'My List'}
+            </button>
+          </div>
+        </div>
+
+        {/* Dot indicators */}
+        {heroMovies.length > 1 && (
+          <div className="hero-dots">
+            {heroMovies.map((_, i) => (
+              <button
+                key={i}
+                className={`hero-dot ${i === heroIndex ? 'active' : ''}`}
+                onClick={() => setHeroIndex(i)}
+              />
             ))}
           </div>
         )}
-      </section>
+      </header>
+    );
+  };
 
-      {/* Movie Details & Custom Player Modal */}
-      {selectedMovie && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          {/* Fixed close button outside scroll container */}
-          <button 
-            className="modal-close-btn" 
-            style={{ position: 'fixed', top: '2rem', right: '2rem', zIndex: 110 }} 
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCloseModal();
-            }}
-          >
-            <X size={20} />
-          </button>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-
-            {/* Video Player or Poster Header */}
-            {isPlaying ? (
-              <div style={{ padding: '1rem' }}>
-                <VideoPlayer
-                  src={selectedMovie.videoUrl && selectedMovie.videoUrl.startsWith('/uploads') 
-                    ? `${API_URL}/api/stream/${selectedMovie.id}`
-                    : selectedMovie.videoUrl
-                  }
-                  poster={getAssetUrl(selectedMovie.thumbnail)}
-                  title={selectedMovie.title}
-                />
-              </div>
-            ) : (
-              <div
-                className="modal-header"
-                style={{ backgroundImage: `url(${getAssetUrl(selectedMovie.thumbnail)})` }}
-              />
+  // ── Home View ──────────────────────────────────────────────────
+  const HomeView = () => {
+    // "My List" shortcut tab
+    if (selectedCategory === '__watchlist__') {
+      return (
+        <div style={{ paddingTop: '80px' }}>
+          <div className="filter-bar">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                className={`filter-chip ${selectedCategory === cat ? 'active' : ''}`}
+                onClick={() => setSelectedCategory(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+            <button
+              className={`filter-chip ${selectedCategory === '__watchlist__' ? 'active' : ''}`}
+              onClick={() => setSelectedCategory('__watchlist__')}
+            >
+              My List
+            </button>
+          </div>
+          <div className="rails-section" style={{ paddingTop: '1.5rem' }}>
+            <Rail
+              title="My Watchlist"
+              movies={watchlist}
+              onSelect={goWatch}
+              onWatchlist={handleToggleWatchlist}
+              isInWatchlist={isInWatchlist}
+            />
+            {watchlist.length === 0 && (
+              <div className="empty-state">Your watchlist is empty. Add some movies!</div>
             )}
+          </div>
+        </div>
+      );
+    }
 
-            {/* Movie Info Section */}
-            <div className="modal-body" style={{ marginTop: isPlaying ? '0' : undefined }}>
-              <div className="modal-details-grid">
-                <div>
-                  <h2 className="modal-title">{selectedMovie.title}</h2>
-                  <div className="modal-meta-row">
-                    <span className="rating-badge">★ {selectedMovie.rating}</span>
-                    <span>{selectedMovie.year}</span>
-                    <span>{selectedMovie.duration}</span>
-                    <span>•</span>
-                    <span style={{ color: 'var(--accent)', fontWeight: 600 }}>
-                      {selectedMovie.category}
-                    </span>
-                  </div>
-                  
-                  <div className="hero-buttons" style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
-                    <button
-                      className="btn-primary"
-                      style={{ padding: '0.8rem 2rem', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                      onClick={() => setIsPlaying(true)}
-                    >
-                      <Play size={18} fill="currentColor" /> Play Movie
-                    </button>
+    // Category filter active — show filtered grid as a single rail
+    if (selectedCategory !== 'All') {
+      return (
+        <div style={{ paddingTop: '80px' }}>
+          <div className="filter-bar">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                className={`filter-chip ${selectedCategory === cat ? 'active' : ''}`}
+                onClick={() => setSelectedCategory(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+          <div className="rails-section" style={{ paddingTop: '1.5rem' }}>
+            <Rail
+              title={`${selectedCategory} Movies`}
+              movies={filteredByCategory}
+              onSelect={goWatch}
+              onWatchlist={handleToggleWatchlist}
+              isInWatchlist={isInWatchlist}
+            />
+            {filteredByCategory.length === 0 && (
+              <div className="empty-state">No movies in this category yet.</div>
+            )}
+          </div>
+        </div>
+      );
+    }
 
-                    <button 
-                      className="btn-secondary"
-                      onClick={(e) => handleToggleWatchlist(selectedMovie.id, e)}
-                      style={{ padding: '0.8rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                    >
-                      {isMovieInWatchlist(selectedMovie.id) ? (
-                        <Check size={18} style={{ color: 'var(--accent)' }} />
-                      ) : (
-                        <Plus size={18} />
-                      )}
-                    </button>
-                  </div>
-                  
-                  <p className="modal-description">{selectedMovie.description}</p>
-                </div>
+    // Full home — hero + rails
+    return (
+      <>
+        <HeroBanner />
+        {/* Category filter chips */}
+        <div className="filter-bar" style={{ marginTop: '1.5rem' }}>
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              className={`filter-chip ${selectedCategory === cat ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(cat)}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+        <div className="rails-section" style={{ paddingTop: '1.5rem' }}>
+          {/* Trending rail */}
+          {trendingMovies.length > 0 && (
+            <Rail
+              title="🔥 Trending Now"
+              movies={trendingMovies}
+              onSelect={goWatch}
+              onWatchlist={handleToggleWatchlist}
+              isInWatchlist={isInWatchlist}
+            />
+          )}
 
-                <div className="modal-sidebar">
-                  <div className="sidebar-item">
-                    <span className="sidebar-label">
-                      <Film size={12} style={{ display: 'inline', marginRight: '4px' }} /> Genre
-                    </span>
-                    <span className="sidebar-val">{selectedMovie.category}</span>
-                  </div>
-                  <div className="sidebar-item">
-                    <span className="sidebar-label">
-                      <Clock size={12} style={{ display: 'inline', marginRight: '4px' }} /> Duration
-                    </span>
-                    <span className="sidebar-val">{selectedMovie.duration}</span>
-                  </div>
-                  <div className="sidebar-item">
-                    <span className="sidebar-label">
-                      <Calendar size={12} style={{ display: 'inline', marginRight: '4px' }} /> Release Year
-                    </span>
-                    <span className="sidebar-val">{selectedMovie.year}</span>
-                  </div>
-                  <div className="sidebar-item">
-                    <span className="sidebar-label">
-                      <Star size={12} style={{ display: 'inline', marginRight: '4px' }} /> Rating
-                    </span>
-                    <span className="sidebar-val" style={{ color: '#eab308' }}>
-                      {selectedMovie.rating} / 5.0
-                    </span>
-                  </div>
+          {/* Watchlist rail */}
+          {user && watchlist.length > 0 && (
+            <Rail
+              title="Continue Watching / My List"
+              movies={watchlist}
+              onSelect={goWatch}
+              onWatchlist={handleToggleWatchlist}
+              isInWatchlist={isInWatchlist}
+            />
+          )}
+
+          {/* Per-category rails */}
+          {Object.entries(groupedByCategory).map(([cat, list]) => (
+            <Rail
+              key={cat}
+              title={cat}
+              movies={list}
+              onSelect={goWatch}
+              onWatchlist={handleToggleWatchlist}
+              isInWatchlist={isInWatchlist}
+            />
+          ))}
+
+          {movies.length === 0 && (
+            <div className="empty-state">Loading content...</div>
+          )}
+        </div>
+      </>
+    );
+  };
+
+  // ── Search View ────────────────────────────────────────────────
+  const SearchView = () => (
+    <div className="search-section">
+      <h2>
+        {searchQuery ? `Results for "${searchQuery}"` : 'Browse All'}
+      </h2>
+      {searchResults.length === 0 ? (
+        <div className="empty-state">No results found.</div>
+      ) : (
+        <div className="search-grid">
+          {searchResults.map((movie) => (
+            <div
+              key={movie.id}
+              className="search-card"
+              onClick={() => goWatch(movie)}
+            >
+              <img
+                src={getAssetUrl(movie.thumbnail)}
+                alt={movie.title}
+                loading="lazy"
+              />
+              <div className="search-card-info">
+                <div className="search-card-title">{movie.title}</div>
+                <div className="search-card-meta">
+                  <span>★ {movie.rating}</span>
+                  <span>•</span>
+                  <span>{movie.year}</span>
                 </div>
               </div>
             </div>
-          </div>
+          ))}
         </div>
       )}
+    </div>
+  );
 
-      {/* Auth Portal Modal */}
+  // ── Watch View ─────────────────────────────────────────────────
+  const WatchView = () => {
+    if (!watchMovie) return null;
+    const videoSrc = watchMovie.videoUrl && watchMovie.videoUrl.startsWith('/uploads')
+      ? `${API_URL}/api/stream/${watchMovie.id}`
+      : watchMovie.videoUrl;
+
+    return (
+      <div className="watch-page fade-in">
+        {/* Full-width player */}
+        <div className="watch-player-wrap">
+          <VideoPlayer
+            src={videoSrc}
+            poster={getAssetUrl(watchMovie.thumbnail)}
+            title={watchMovie.title}
+          />
+        </div>
+
+        {/* Details */}
+        <div className="watch-details">
+          {/* Back button */}
+          <button className="watch-back" onClick={goHome}>
+            <ChevronLeft size={18} /> Back to Browse
+          </button>
+
+          <h1 className="watch-title">{watchMovie.title}</h1>
+
+          <div className="watch-meta">
+            <span className="rating">★ {watchMovie.rating}</span>
+            <span>•</span>
+            <span>
+              <Clock size={13} style={{ display: 'inline', marginRight: 4 }} />
+              {watchMovie.duration}
+            </span>
+            <span>
+              <Calendar size={13} style={{ display: 'inline', marginRight: 4 }} />
+              {watchMovie.year}
+            </span>
+            <span className="genre-tag">
+              <Film size={11} style={{ display: 'inline', marginRight: 3 }} />
+              {watchMovie.category}
+            </span>
+          </div>
+
+          <div className="watch-actions">
+            <button
+              className={`btn-watchlist ${isInWatchlist(watchMovie.id) ? 'active' : ''}`}
+              onClick={(e) => handleToggleWatchlist(watchMovie.id, e)}
+            >
+              {isInWatchlist(watchMovie.id) ? <Check size={16} /> : <Plus size={16} />}
+              {isInWatchlist(watchMovie.id) ? 'In My List' : 'Add to My List'}
+            </button>
+          </div>
+
+          <p className="watch-desc">{watchMovie.description}</p>
+
+          {/* Similar movies */}
+          {similarMovies.length > 0 && (
+            <>
+              <hr className="watch-divider" />
+              <div className="watch-more-title">More Like This</div>
+              <div className="rail-track" style={{ paddingBottom: '1rem' }}>
+                {similarMovies.map((m) => (
+                  <div
+                    key={m.id}
+                    className="card"
+                    onClick={() => goWatch(m)}
+                  >
+                    <img
+                      className="card-thumb"
+                      src={getAssetUrl(m.thumbnail)}
+                      alt={m.title}
+                      loading="lazy"
+                    />
+                    <div className="card-info">
+                      <div className="card-title">{m.title}</div>
+                      <div className="card-meta">
+                        <span className="star">★</span>
+                        <span>{m.rating}</span>
+                        <span>•</span>
+                        <span>{m.year}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ── Render ─────────────────────────────────────────────────────
+  return (
+    <div className="app-shell">
+      <NavBar />
+
+      {view === 'home'   && <HomeView />}
+      {view === 'search' && <SearchView />}
+      {view === 'watch'  && <WatchView />}
+
+      {/* Auth modal */}
       {showAuth && (
-        <AuthPortal 
+        <AuthPortal
           apiUrl={API_URL}
           onAuthSuccess={handleAuthSuccess}
           onClose={() => setShowAuth(false)}
         />
       )}
 
-      {/* Admin Upload Portal Modal */}
+      {/* Admin modal */}
       {showAdmin && (
-        <AdminDashboard 
+        <AdminDashboard
           apiUrl={API_URL}
           userId={user?.id}
           onUploadSuccess={fetchMovies}
           onClose={() => setShowAdmin(false)}
         />
-
       )}
     </div>
   );

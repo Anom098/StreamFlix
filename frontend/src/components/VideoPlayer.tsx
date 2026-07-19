@@ -46,7 +46,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
   // Check if the source is a Google Drive link
   const driveFileId = getGoogleDriveFileId(src);
   const isDriveVideo = driveFileId !== null;
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const driveEmbedUrl = isDriveVideo ? `https://drive.google.com/file/d/${driveFileId}/preview` : '';
 
   let controlsTimeout: number;
@@ -118,18 +117,22 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
     setIsMuted(nextMute);
   };
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = async () => {
     if (!containerRef.current) return;
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().then(() => {
+    try {
+      const el = containerRef.current as any;
+      const doc = document as any;
+      if (!document.fullscreenElement && !doc.webkitFullscreenElement) {
+        if (el.requestFullscreen) await el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
         setIsFullscreen(true);
-      }).catch((err) => {
-        console.error('Error entering fullscreen:', err);
-      });
-    } else {
-      document.exitFullscreen().then(() => {
+      } else {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
         setIsFullscreen(false);
-      });
+      }
+    } catch (e) {
+      console.log('Fullscreen error:', e);
     }
   };
 
@@ -155,145 +158,68 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
     setShowControls(true);
     clearTimeout(controlsTimeout);
     controlsTimeout = window.setTimeout(() => {
-      if (isPlaying) {
-        setShowControls(false);
-      }
+      if (isPlaying) setShowControls(false);
     }, 3000);
   };
 
   // ===================== GOOGLE DRIVE EMBED =====================
-if (isDriveVideo) {
-  // iOS: render native video element (allows true fullscreen)
-  if (isIOS) {
-    const directUrl = `https://drive.google.com/uc?export=download&id=${driveFileId}`;
+  if (isDriveVideo) {
     return (
       <div
         ref={containerRef}
-        style={
-          isFullscreen
-            ? {
-                position: 'fixed',
-                top: '0',
-                left: '0',
-                width: '100vw',
-                height: '100vh',
-                zIndex: 9999,
-                background: '#000',
-              }
-            : {
-                width: '100%',
-                height: '60vh',
-                minHeight: '250px',
-                maxHeight: '500px',
-                background: '#000',
-                overflow: 'hidden',
-                position: 'relative',
-              }
-        }
+        style={{
+          position: 'relative',
+          width: '100%',
+          aspectRatio: '16/9',
+          background: '#000',
+          overflow: 'hidden',
+        }}
       >
-        <video
-          src={directUrl}
-          controls
-          autoPlay
-          muted={isMuted}
-          playsInline
-          style={{ width: '100%', height: '100%' }}
+        {/* Custom fullscreen button for non-iOS (top-right) */}
+        <button
+          onClick={toggleFullscreen}
+          style={{
+            position: 'absolute',
+            top: '0.8rem',
+            right: '0.8rem',
+            zIndex: 20,
+            background: 'rgba(0,0,0,0.65)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            color: '#fff',
+            padding: '0.45rem 0.9rem',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            fontFamily: 'Inter, sans-serif',
+          }}
+          title="Toggle Fullscreen"
+        >
+          {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+          {isFullscreen ? 'Exit' : 'Full Screen'}
+        </button>
+
+        <iframe
+          src={driveEmbedUrl}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            display: 'block',
+          }}
+          allow="autoplay; encrypted-media; fullscreen"
+          allowFullScreen
         />
       </div>
     );
   }
 
-  // non‑iOS: keep iframe with custom fullscreen button (no iOS alert)
-  return (
-    <div
-      ref={containerRef}
-      style={
-        isFullscreen
-          ? {
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              width: window.innerHeight > window.innerWidth ? '100vh' : '100vw',
-              height: window.innerHeight > window.innerWidth ? '100vw' : '100vh',
-              transform: window.innerHeight > window.innerWidth ? 'translate(-50%, -50%) rotate(90deg)' : 'translate(-50%, -50%)',
-              zIndex: 9999,
-              background: '#000',
-            }
-          : {
-              width: '100%',
-              height: '60vh',
-              minHeight: '250px',
-              maxHeight: '500px',
-              background: '#000',
-              overflow: 'hidden',
-              position: 'relative',
-            }
-      }
-    >
-      <div className="video-controls-header" style={{ opacity: 1, zIndex: 10, padding: '1rem', background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)' }}>
-        <span style={{ fontWeight: 600, color: '#fff', fontSize: '1.1rem' }}>{title || 'Playing Video'}</span>
-        <button
-          onClick={async () => {
-            if (!isFullscreen) {
-              try {
-                const el = containerRef.current as any;
-                if (el?.requestFullscreen) {
-                  await el.requestFullscreen();
-                } else if (el?.webkitRequestFullscreen) {
-                  await el.webkitRequestFullscreen();
-                }
-              } catch (e) {
-                console.log('Native fullscreen not supported, falling back to CSS');
-              }
-              setIsFullscreen(true);
-            } else {
-              try {
-                const doc = document as any;
-                if (document.fullscreenElement || doc.webkitFullscreenElement) {
-                  if (document.exitFullscreen) await document.exitFullscreen();
-                  else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
-                }
-              } catch (e) {}
-              setIsFullscreen(false);
-            }
-          }}
-          style={{
-            background: 'rgba(0,0,0,0.6)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            color: '#fff',
-            padding: '0.5rem 1rem',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            fontWeight: 'bold',
-            zIndex: 999,
-          }}
-        >
-          {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
-          {isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
-        </button>
-      </div>
-
-      <iframe
-        src={driveEmbedUrl}
-        style={{
-          width: '100%',
-          height: 'calc(100% + 60px)', // push Google Drive UI out of view
-          border: 'none',
-          display: 'block',
-        }}
-        allow="encrypted-media; fullscreen"
-        allowFullScreen
-      />
-    </div>
-  );
-}
-
   // ===================== STANDARD VIDEO PLAYER =====================
   return (
-    <div 
+    <div
       ref={containerRef}
       className="video-player-container"
       onMouseMove={handleMouseMove}
@@ -318,10 +244,7 @@ if (isDriveVideo) {
 
       {/* Overlay Big Play/Pause Button on Idle */}
       {!isPlaying && !isBuffering && (
-        <button 
-          onClick={togglePlay}
-          className="video-play-overlay"
-        >
+        <button onClick={togglePlay} className="video-play-overlay">
           <Play size={30} style={{ transform: 'translateX(2px)' }} />
         </button>
       )}
@@ -329,14 +252,14 @@ if (isDriveVideo) {
       {/* Video Custom Header Control */}
       {showControls && title && (
         <div className="video-controls-header" style={{ opacity: showControls ? 1 : 0 }}>
-          <span style={{ fontWeight: 600, color: '#fff', fontSize: '1.1rem' }}>{title}</span>
+          <span style={{ fontWeight: 600, color: '#fff', fontSize: '1rem' }}>{title}</span>
         </div>
       )}
 
       {/* Custom Control Bar */}
-      <div 
+      <div
         className="video-controls-bar"
-        style={{ opacity: showControls ? 1 : 0 }}
+        style={{ opacity: showControls ? 1 : 0, transition: 'opacity 0.3s' }}
       >
         {/* Timeline Slider */}
         <div className="video-timeline-container">
@@ -399,7 +322,7 @@ if (isDriveVideo) {
                 borderRadius: '4px',
                 padding: '0.2rem 0.4rem',
                 cursor: 'pointer',
-                outline: 'none'
+                outline: 'none',
               }}
             >
               <option value="0.5">0.5x</option>
