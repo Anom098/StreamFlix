@@ -582,6 +582,14 @@ function App() {
 
     return (
       <div className="watch-page fade-in">
+        {/* Back bar — always visible above the player */}
+        <div className="watch-topbar">
+          <button className="watch-back" onClick={goHome}>
+            <ChevronLeft size={18} /> Back to Browse
+          </button>
+          <span className="watch-topbar-title">{watchMovie.title}</span>
+        </div>
+
         {/* Full-width player */}
         <div className="watch-player-wrap">
           <VideoPlayer
@@ -593,10 +601,6 @@ function App() {
 
         {/* Details */}
         <div className="watch-details">
-          {/* Back button */}
-          <button className="watch-back" onClick={goHome}>
-            <ChevronLeft size={18} /> Back to Browse
-          </button>
 
           <h1 className="watch-title">{watchMovie.title}</h1>
 

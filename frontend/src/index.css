@@ -587,7 +587,26 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
 .watch-page {
   min-height: 100vh;
   background: var(--bg);
-  padding-top: 64px;
+  padding-top: 64px; /* nav height */
+}
+
+/* Bar between nav and player: back button + title */
+.watch-topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 4%;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.watch-topbar-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .watch-player-wrap {
