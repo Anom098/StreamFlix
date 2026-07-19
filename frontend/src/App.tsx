@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import {
-  Search, Play, X, Star, Clock, Calendar, Film,
+  Search, Play, Star, Clock, Calendar, Film,
   Plus, Check, LogOut, Shield, ChevronLeft, Info
 } from 'lucide-react';
 import { VideoPlayer } from './components/VideoPlayer';
