@@ -496,7 +496,7 @@ function App() {
     // Full home — hero + rails
     return (
       <>
-        <HeroBanner />
+        {HeroBanner()}
         {/* Category filter chips */}
         <div className="filter-bar" style={{ marginTop: '1.5rem' }}>
           {CATEGORIES.map((cat) => (
@@ -693,11 +693,11 @@ function App() {
   // ── Render ─────────────────────────────────────────────────────
   return (
     <div className="app-shell">
-      <NavBar />
+      {NavBar()}
 
-      {view === 'home'   && <HomeView />}
-      {view === 'search' && <SearchView />}
-      {view === 'watch'  && <WatchView />}
+      {view === 'home'   && HomeView()}
+      {view === 'search' && SearchView()}
+      {view === 'watch'  && WatchView()}
 
       {/* Auth modal */}
       {showAuth && (
