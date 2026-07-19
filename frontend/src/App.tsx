@@ -259,44 +259,59 @@ function App() {
   // ── Nav bar ─────────────────────────────────────────────────────
   const NavBar = () => (
     <nav className={`nav ${navScrolled || view !== 'home' ? 'scrolled' : ''}`}>
-      {/* Logo */}
-      <div className="nav-logo" onClick={goHome}>
-        <span className="nav-logo-mark">SF</span>
-        <span className="nav-logo-text">StreamFlix</span>
-      </div>
+      {/* Watch mode: show back button + movie title instead of logo+links */}
+      {view === 'watch' ? (
+        <>
+          <button className="nav-back-btn" onClick={goHome}>
+            <ChevronLeft size={20} />
+          </button>
+          <div className="nav-logo" onClick={goHome}>
+            <span className="nav-logo-mark">SF</span>
+            <span className="nav-logo-text">StreamFlix</span>
+          </div>
+          <span className="nav-watch-title">{watchMovie?.title}</span>
+        </>
+      ) : (
+        <>
+          <div className="nav-logo" onClick={goHome}>
+            <span className="nav-logo-mark">SF</span>
+            <span className="nav-logo-text">StreamFlix</span>
+          </div>
 
-      {/* Nav links — only on home */}
-      {view === 'home' && (
-        <ul className="nav-links">
-          <li>
-            <button
-              className={selectedCategory === 'All' ? 'active' : ''}
-              onClick={() => setSelectedCategory('All')}
-            >
-              Home
-            </button>
-          </li>
-          {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
-            <li key={cat}>
-              <button
-                className={selectedCategory === cat ? 'active' : ''}
-                onClick={() => setSelectedCategory(cat)}
-              >
-                {cat}
-              </button>
-            </li>
-          ))}
-          {user && (
-            <li>
-              <button
-                className={selectedCategory === '__watchlist__' ? 'active' : ''}
-                onClick={() => setSelectedCategory('__watchlist__')}
-              >
-                My List
-              </button>
-            </li>
+          {/* Nav links — only on home */}
+          {view === 'home' && (
+            <ul className="nav-links">
+              <li>
+                <button
+                  className={selectedCategory === 'All' ? 'active' : ''}
+                  onClick={() => setSelectedCategory('All')}
+                >
+                  Home
+                </button>
+              </li>
+              {CATEGORIES.filter((c) => c !== 'All').map((cat) => (
+                <li key={cat}>
+                  <button
+                    className={selectedCategory === cat ? 'active' : ''}
+                    onClick={() => setSelectedCategory(cat)}
+                  >
+                    {cat}
+                  </button>
+                </li>
+              ))}
+              {user && (
+                <li>
+                  <button
+                    className={selectedCategory === '__watchlist__' ? 'active' : ''}
+                    onClick={() => setSelectedCategory('__watchlist__')}
+                  >
+                    My List
+                  </button>
+                </li>
+              )}
+            </ul>
           )}
-        </ul>
+        </>
       )}
 
       {/* Right side */}
@@ -582,12 +597,18 @@ function App() {
 
     return (
       <div className="watch-page fade-in">
-        {/* Back bar — always visible above the player */}
-        <div className="watch-topbar">
-          <button className="watch-back" onClick={goHome}>
-            <ChevronLeft size={18} /> Back to Browse
-          </button>
-          <span className="watch-topbar-title">{watchMovie.title}</span>
+
+        {/* Movie info header — sits below the fixed nav, above player */}
+        <div className="watch-header">
+          <h1 className="watch-title">{watchMovie.title}</h1>
+          <div className="watch-meta">
+            <span className="rating">★ {watchMovie.rating}</span>
+            <span>•</span>
+            <span>{watchMovie.duration}</span>
+            <span>•</span>
+            <span>{watchMovie.year}</span>
+            <span className="genre-tag">{watchMovie.category}</span>
+          </div>
         </div>
 
         {/* Full-width player */}
@@ -599,9 +620,8 @@ function App() {
           />
         </div>
 
-        {/* Details */}
+        {/* Details below player */}
         <div className="watch-details">
-
           <h1 className="watch-title">{watchMovie.title}</h1>
 
           <div className="watch-meta">

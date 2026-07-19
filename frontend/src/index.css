@@ -97,6 +97,34 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
   letter-spacing: -0.02em;
 }
 
+/* Back button shown in nav during watch mode */
+.nav-back-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.nav-back-btn:hover { background: rgba(255,255,255,0.2); }
+
+/* Movie title shown in nav during watch mode */
+.nav-watch-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
 .nav-links {
   display: flex;
   align-items: center;
@@ -590,23 +618,11 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
   padding-top: 64px; /* nav height */
 }
 
-/* Bar between nav and player: back button + title */
-.watch-topbar {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.6rem 4%;
-  background: var(--bg);
+/* Movie info shown ABOVE the player */
+.watch-header {
+  padding: 1.2rem 4% 0.8rem;
   border-bottom: 1px solid var(--border);
-}
-
-.watch-topbar-title {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--text-dim);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  background: var(--bg);
 }
 
 .watch-player-wrap {
