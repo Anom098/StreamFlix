@@ -301,12 +301,9 @@ app.post('/api/admin/cloudinary-signature', requireAdmin, (req, res) => {
   try {
     const timestamp = Math.round(new Date().getTime() / 1000);
     const { folder } = req.body;
-    
-    // The params to sign must match exactly what the client sends
-    const paramsToSign = {
-      timestamp: timestamp,
-    };
-    if (folder) paramsToSign.folder = folder;
+
+    // Only sign timestamp — folder is NOT included so there's no mismatch
+    const paramsToSign = { timestamp };
 
     const signature = cloudinary.utils.api_sign_request(
       paramsToSign,
@@ -316,6 +313,7 @@ app.post('/api/admin/cloudinary-signature', requireAdmin, (req, res) => {
     res.json({
       timestamp,
       signature,
+      folder: folder || 'streamflix',  // echo back the folder so frontend uses exact same string
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY
     });

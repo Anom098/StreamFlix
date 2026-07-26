@@ -162,7 +162,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
       fd.append('api_key', signatureData.api_key);
       fd.append('timestamp', signatureData.timestamp);
       fd.append('signature', signatureData.signature);
-      fd.append('folder', `streamflix/${resourceType}s`);
+      // Do NOT append folder — it's not in the signature so Cloudinary rejects it if sent
 
       xhr.send(fd);
     });
