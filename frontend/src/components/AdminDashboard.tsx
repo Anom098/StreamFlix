@@ -132,41 +132,52 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
     }
   };
 
-  const uploadToCloudinary = (file: File, signatureData: any, resourceType: 'image' | 'video'): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      const url = `https://api.cloudinary.com/v1_1/${signatureData.cloud_name}/${resourceType}/upload`;
-      
-      xhr.open('POST', url, true);
-      
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable && resourceType === 'video') {
-          const percentComplete = Math.round((e.loaded / e.total) * 100);
-          setUploadProgress(percentComplete);
-        }
-      };
+  const uploadToCloudinary = async (file: File, signatureData: any, resourceType: 'image' | 'video'): Promise<string> => {
+    const url = `https://api.cloudinary.com/v1_1/${signatureData.cloud_name}/${resourceType}/upload`;
 
-      xhr.onload = () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          resolve(response.secure_url);
-        } else {
-          reject(new Error(`Failed to upload ${resourceType} to Cloudinary`));
-        }
-      };
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('api_key', String(signatureData.api_key));
+    fd.append('timestamp', String(signatureData.timestamp));
+    fd.append('signature', signatureData.signature);
 
-      xhr.onerror = () => reject(new Error('Network error during upload'));
+    // Use XHR only for video (real progress), fetch for image
+    if (resourceType === 'video') {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url, true);
 
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('api_key', signatureData.api_key);
-      fd.append('timestamp', signatureData.timestamp);
-      fd.append('signature', signatureData.signature);
-      // Do NOT append folder — it's not in the signature so Cloudinary rejects it if sent
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        };
 
-      xhr.send(fd);
-    });
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const res = JSON.parse(xhr.responseText);
+            resolve(res.secure_url);
+          } else {
+            let msg = `Cloudinary error ${xhr.status}`;
+            try { msg = JSON.parse(xhr.responseText)?.error?.message || msg; } catch {}
+            reject(new Error(msg));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error('Network error — check browser console for CORS details'));
+        xhr.send(fd);
+      });
+    } else {
+      // For images just use fetch — simpler, same CORS support
+      const response = await fetch(url, { method: 'POST', body: fd });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error?.message || `Cloudinary image upload failed (${response.status})`);
+      }
+      return data.secure_url;
+    }
   };
+
 
   const handleSubmitUpload = async (e: React.FormEvent) => {
     e.preventDefault();
