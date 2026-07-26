@@ -28,7 +28,7 @@ function getGoogleDriveFileId(url: string): string | null {
   return null;
 }
 
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) => {
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Check if the source is a Google Drive link
