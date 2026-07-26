@@ -674,6 +674,37 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
   }
 }
 
+.drive-player-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  width: 100%;
+}
+
+.drive-fullscreen-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: center;
+  transition: background 0.2s;
+  display: none; /* Only show on mobile where iframe fullscreen usually fails */
+}
+
+@media (max-width: 900px) {
+  .drive-fullscreen-btn {
+    display: block;
+  }
+}
+
+.drive-fullscreen-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
 .watch-details-section {
   flex: 1 1 35%;
   display: flex;
