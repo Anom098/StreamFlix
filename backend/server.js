@@ -1,9 +1,18 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
 const db = require('./database');
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -230,7 +239,7 @@ app.post(
     { name: 'video', maxCount: 1 },
     { name: 'thumbnail', maxCount: 1 },
   ]),
-  (req, res) => {
+  async (req, res) => {
     const { title, description, category, duration, year, trending } = req.body;
 
     if (!req.files || !req.files.video || !req.files.thumbnail) {
@@ -240,25 +249,49 @@ app.post(
     const videoFile = req.files.video[0];
     const thumbnailFile = req.files.thumbnail[0];
 
-    const videoUrl = `/uploads/videos/${videoFile.filename}`;
-    const thumbnailUrl = `/uploads/thumbnails/${thumbnailFile.filename}`;
+    try {
+      console.log('Uploading thumbnail to Cloudinary...');
+      const thumbUpload = await cloudinary.uploader.upload(thumbnailFile.path, {
+        folder: 'streamflix/thumbnails',
+        resource_type: 'image',
+      });
 
-    db.run(
-      `INSERT INTO movies (title, description, category, thumbnail, "videoUrl", duration, rating, year, trending)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-      [
-        title, description, category, thumbnailUrl, videoUrl,
-        duration || '10:00', '4.5',
-        year || new Date().getFullYear().toString(),
-        trending === 'true' || trending === '1' ? 1 : 0,
-      ],
-      function (err) {
-        if (err) {
-          return res.status(500).json({ error: err.message });
+      console.log('Uploading video to Cloudinary (this may take a moment)...');
+      const videoUpload = await cloudinary.uploader.upload(videoFile.path, {
+        folder: 'streamflix/videos',
+        resource_type: 'video',
+      });
+
+      // Delete the local files from Railway's temporary storage
+      fs.unlink(thumbnailFile.path, () => {});
+      fs.unlink(videoFile.path, () => {});
+
+      const videoUrl = videoUpload.secure_url;
+      const thumbnailUrl = thumbUpload.secure_url;
+
+      db.run(
+        `INSERT INTO movies (title, description, category, thumbnail, "videoUrl", duration, rating, year, trending)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+        [
+          title, description, category, thumbnailUrl, videoUrl,
+          duration || '10:00', '4.5',
+          year || new Date().getFullYear().toString(),
+          trending === 'true' || trending === '1' ? 1 : 0,
+        ],
+        function (err) {
+          if (err) {
+            return res.status(500).json({ error: err.message });
+          }
+          res.status(201).json({ message: 'Movie uploaded to Cloudinary successfully', movieId: this.lastID });
         }
-        res.status(201).json({ message: 'Movie uploaded successfully', movieId: this.lastID });
-      }
-    );
+      );
+    } catch (err) {
+      console.error('Cloudinary upload error:', err);
+      // Clean up temp files if upload fails
+      if (fs.existsSync(thumbnailFile.path)) fs.unlink(thumbnailFile.path, () => {});
+      if (fs.existsSync(videoFile.path)) fs.unlink(videoFile.path, () => {});
+      return res.status(500).json({ error: 'Failed to upload media to Cloudinary' });
+    }
   }
 );
 

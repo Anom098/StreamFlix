@@ -9,7 +9,9 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "cloudinary": "^2.10.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
     "express": "^4.19.2",
     "multer": "^2.2.0",
     "pg": "^8.22.0",
