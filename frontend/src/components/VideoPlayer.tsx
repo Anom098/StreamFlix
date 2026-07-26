@@ -39,7 +39,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster }) => {
   // ===================== GOOGLE DRIVE EMBED =====================
   if (isDriveVideo) {
     return (
-      <div
       <div ref={containerRef} className="video-player-container">
         <iframe
           src={driveEmbedUrl}
