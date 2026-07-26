@@ -692,13 +692,8 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
   cursor: pointer;
   align-self: center;
   transition: background 0.2s;
-  display: none; /* Only show on mobile where iframe fullscreen usually fails */
-}
-
-@media (max-width: 900px) {
-  .drive-fullscreen-btn {
-    display: block;
-  }
+  display: block; /* Always show the fallback fullscreen button */
+  margin-top: 0.5rem;
 }
 
 .drive-fullscreen-btn:hover {
