@@ -132,6 +132,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
     }
   };
 
+  const uploadToCloudinary = (file: File, signatureData: any, resourceType: 'image' | 'video'): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const url = `https://api.cloudinary.com/v1_1/${signatureData.cloud_name}/${resourceType}/upload`;
+      
+      xhr.open('POST', url, true);
+      
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && resourceType === 'video') {
+          const percentComplete = Math.round((e.loaded / e.total) * 100);
+          setUploadProgress(percentComplete);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          resolve(response.secure_url);
+        } else {
+          reject(new Error(`Failed to upload ${resourceType} to Cloudinary`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Network error during upload'));
+
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('api_key', signatureData.api_key);
+      fd.append('timestamp', signatureData.timestamp);
+      fd.append('signature', signatureData.signature);
+      fd.append('folder', `streamflix/${resourceType}s`);
+
+      xhr.send(fd);
+    });
+  };
+
   const handleSubmitUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -143,38 +179,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
     }
 
     setLoading(true);
-    setUploadProgress(10);
-
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('category', category);
-    formData.append('duration', duration || '10:00');
-    formData.append('year', year || new Date().getFullYear().toString());
-    formData.append('trending', trending ? 'true' : 'false');
-    formData.append('thumbnail', thumbnailFile);
-    formData.append('video', videoFile);
+    setUploadProgress(0);
 
     try {
-      const interval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 90) { clearInterval(interval); return 90; }
-          return prev + 15;
-        });
-      }, 500);
-
-      const response = await fetch(`${apiUrl}/api/admin/upload`, {
+      // 1. Get Signature from Backend
+      const sigRes = await fetch(`${apiUrl}/api/admin/cloudinary-signature`, {
         method: 'POST',
-        headers: { 'x-user-id': userId || '' },
-        body: formData,
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
+        body: JSON.stringify({ folder: 'streamflix/videos' }) // We use a general signature for both
+      });
+      const sigData = await sigRes.json();
+      if (!sigRes.ok) throw new Error(sigData.error || 'Failed to get upload signature');
+
+      // We need a second signature specifically for thumbnails because folder is part of the signature
+      const thumbSigRes = await fetch(`${apiUrl}/api/admin/cloudinary-signature`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
+        body: JSON.stringify({ folder: 'streamflix/thumbnails' })
+      });
+      const thumbSigData = await thumbSigRes.json();
+
+      // 2. Upload Thumbnail
+      setSuccess('Uploading thumbnail...');
+      const thumbUrl = await uploadToCloudinary(thumbnailFile, thumbSigData, 'image');
+
+      // 3. Upload Video
+      setSuccess('Uploading video to Cloudinary... Do not close window.');
+      const videoUrlStr = await uploadToCloudinary(videoFile, sigData, 'video');
+
+      // 4. Save to Database using the add-url endpoint
+      setSuccess('Saving movie to database...');
+      const dbRes = await fetch(`${apiUrl}/api/admin/add-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
+        body: JSON.stringify({ 
+          title, description, category, duration, year, trending, 
+          videoUrl: videoUrlStr, thumbnailUrl: thumbUrl 
+        }),
       });
 
-      clearInterval(interval);
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to upload movie');
+      const dbData = await dbRes.json();
+      if (!dbRes.ok) throw new Error(dbData.message || 'Failed to add movie to database');
 
       setUploadProgress(100);
-      setSuccess('Movie uploaded and registered in database successfully!');
+      setSuccess('Movie uploaded to Cloudinary and registered successfully!');
       onUploadSuccess();
       resetForm();
     } catch (err: any) {
