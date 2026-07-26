@@ -656,7 +656,22 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
 .watch-player-wrap video,
 .watch-player-wrap .video-player-container {
   width: 100%;
-  max-height: 70vh;
+}
+
+.video-player-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+  overflow: hidden;
+}
+
+/* On mobile, Google Drive's iframe controls require more vertical space because the buttons are a fixed pixel height. */
+@media (max-width: 768px) {
+  .video-player-container {
+    aspect-ratio: 4/3; 
+    min-height: 250px;
+  }
 }
 
 .watch-details-section {

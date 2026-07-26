@@ -40,15 +40,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster }) => {
   if (isDriveVideo) {
     return (
       <div
-        ref={containerRef}
-        style={{
-          position: 'relative',
-          width: '100%',
-          aspectRatio: '16/9',
-          background: '#000',
-          overflow: 'hidden',
-        }}
-      >
+      <div ref={containerRef} className="video-player-container">
         <iframe
           src={driveEmbedUrl}
           style={{
@@ -59,6 +51,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster }) => {
           }}
           allow="autoplay; encrypted-media; fullscreen"
           allowFullScreen
+          // @ts-ignore
+          webkitallowfullscreen="true"
+          mozallowfullscreen="true"
         />
       </div>
     );
@@ -66,17 +61,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster }) => {
 
   // ===================== STANDARD VIDEO PLAYER =====================
   return (
-    <div
-      ref={containerRef}
-      className="video-player-container"
-      style={{
-        position: 'relative',
-        width: '100%',
-        aspectRatio: '16/9',
-        background: '#000',
-        overflow: 'hidden',
-      }}
-    >
+    <div ref={containerRef} className="video-player-container">
       <video
         src={src}
         poster={poster}
