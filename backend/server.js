@@ -257,9 +257,10 @@ app.post(
       });
 
       console.log('Uploading video to Cloudinary (this may take a moment)...');
-      const videoUpload = await cloudinary.uploader.upload(videoFile.path, {
+      const videoUpload = await cloudinary.uploader.upload_large(videoFile.path, {
         folder: 'streamflix/videos',
         resource_type: 'video',
+        chunk_size: 6000000 // 6MB chunks
       });
 
       // Delete the local files from Railway's temporary storage
