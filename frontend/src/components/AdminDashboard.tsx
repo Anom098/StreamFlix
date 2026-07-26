@@ -132,16 +132,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
     }
   };
 
-  const uploadToCloudinary = async (file: File, signatureData: any, resourceType: 'image' | 'video'): Promise<string> => {
-    const url = `https://api.cloudinary.com/v1_1/${signatureData.cloud_name}/${resourceType}/upload`;
+  const CLOUDINARY_CLOUD_NAME = 'vzm1gckw';
+  const CLOUDINARY_UPLOAD_PRESET = 'streamflix_upload'; // unsigned preset
+
+  const uploadToCloudinary = async (file: File, resourceType: 'image' | 'video'): Promise<string> => {
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
 
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('api_key', String(signatureData.api_key));
-    fd.append('timestamp', String(signatureData.timestamp));
-    fd.append('signature', signatureData.signature);
+    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-    // Use XHR only for video (real progress), fetch for image
+    // Use XHR for video so we can show real progress
     if (resourceType === 'video') {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -164,15 +165,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
           }
         };
 
-        xhr.onerror = () => reject(new Error('Network error — check browser console for CORS details'));
+        xhr.onerror = () => reject(new Error('Network error uploading video'));
         xhr.send(fd);
       });
     } else {
-      // For images just use fetch — simpler, same CORS support
       const response = await fetch(url, { method: 'POST', body: fd });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data?.error?.message || `Cloudinary image upload failed (${response.status})`);
+        throw new Error(data?.error?.message || `Image upload failed (${response.status})`);
       }
       return data.secure_url;
     }
@@ -193,39 +193,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
     setUploadProgress(0);
 
     try {
-      // 1. Get Signature from Backend
-      const sigRes = await fetch(`${apiUrl}/api/admin/cloudinary-signature`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
-        body: JSON.stringify({ folder: 'streamflix/videos' }) // We use a general signature for both
-      });
-      const sigData = await sigRes.json();
-      if (!sigRes.ok) throw new Error(sigData.error || 'Failed to get upload signature');
-
-      // We need a second signature specifically for thumbnails because folder is part of the signature
-      const thumbSigRes = await fetch(`${apiUrl}/api/admin/cloudinary-signature`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
-        body: JSON.stringify({ folder: 'streamflix/thumbnails' })
-      });
-      const thumbSigData = await thumbSigRes.json();
-
-      // 2. Upload Thumbnail
+      // 1. Upload Thumbnail directly to Cloudinary (unsigned)
       setSuccess('Uploading thumbnail...');
-      const thumbUrl = await uploadToCloudinary(thumbnailFile, thumbSigData, 'image');
+      const thumbUrl = await uploadToCloudinary(thumbnailFile, 'image');
 
-      // 3. Upload Video
+      // 2. Upload Video directly to Cloudinary (unsigned, with real progress)
       setSuccess('Uploading video to Cloudinary... Do not close window.');
-      const videoUrlStr = await uploadToCloudinary(videoFile, sigData, 'video');
+      const videoUrlStr = await uploadToCloudinary(videoFile, 'video');
 
-      // 4. Save to Database using the add-url endpoint
+      // 3. Save to Database
       setSuccess('Saving movie to database...');
       const dbRes = await fetch(`${apiUrl}/api/admin/add-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
-        body: JSON.stringify({ 
-          title, description, category, duration, year, trending, 
-          videoUrl: videoUrlStr, thumbnailUrl: thumbUrl 
+        body: JSON.stringify({
+          title, description, category, duration, year, trending,
+          videoUrl: videoUrlStr, thumbnailUrl: thumbUrl
         }),
       });
 
@@ -238,6 +221,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onUploa
       resetForm();
     } catch (err: any) {
       setError(err.message || 'Connection error. Movie upload failed.');
+
     } finally {
       setLoading(false);
     }
