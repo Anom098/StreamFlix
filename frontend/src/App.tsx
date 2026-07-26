@@ -267,7 +267,7 @@ function App() {
           </button>
           <div className="nav-logo" onClick={goHome}>
             <span className="nav-logo-mark">SF</span>
-            <span className="nav-logo-text">StreamFlix</span>
+            <span className="nav-logo-text">StreamFlix v2</span>
           </div>
           <span className="nav-watch-title">{watchMovie?.title}</span>
         </>
@@ -275,7 +275,7 @@ function App() {
         <>
           <div className="nav-logo" onClick={goHome}>
             <span className="nav-logo-mark">SF</span>
-            <span className="nav-logo-text">StreamFlix</span>
+            <span className="nav-logo-text">StreamFlix v2</span>
           </div>
 
           {/* Nav links — only on home */}
