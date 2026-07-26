@@ -175,33 +175,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, poster, title }) 
           overflow: 'hidden',
         }}
       >
-        {/* Custom fullscreen button for non-iOS (top-right) */}
-        <button
-          onClick={toggleFullscreen}
-          style={{
-            position: 'absolute',
-            top: '0.8rem',
-            right: '0.8rem',
-            zIndex: 20,
-            background: 'rgba(0,0,0,0.65)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            color: '#fff',
-            padding: '0.45rem 0.9rem',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            fontFamily: 'Inter, sans-serif',
-          }}
-          title="Toggle Fullscreen"
-        >
-          {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
-          {isFullscreen ? 'Exit' : 'Full Screen'}
-        </button>
-
         <iframe
           src={driveEmbedUrl}
           style={{
