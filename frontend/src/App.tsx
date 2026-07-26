@@ -597,95 +597,85 @@ function App() {
 
     return (
       <div className="watch-page fade-in">
+        
+        <div className="watch-content-layout">
+          {/* Left: Player */}
+          <div className="watch-player-section">
+            <div className="watch-player-wrap">
+              <VideoPlayer
+                src={videoSrc}
+                poster={getAssetUrl(watchMovie.thumbnail)}
+                title={watchMovie.title}
+              />
+            </div>
+          </div>
 
-        {/* Movie info header — sits below the fixed nav, above player */}
-        <div className="watch-header">
-          <h1 className="watch-title">{watchMovie.title}</h1>
-          <div className="watch-meta">
-            <span className="rating">★ {watchMovie.rating}</span>
-            <span>•</span>
-            <span>{watchMovie.duration}</span>
-            <span>•</span>
-            <span>{watchMovie.year}</span>
-            <span className="genre-tag">{watchMovie.category}</span>
+          {/* Right: Text Details */}
+          <div className="watch-details-section">
+            <h1 className="watch-title">{watchMovie.title}</h1>
+            <div className="watch-meta">
+              <span className="rating">★ {watchMovie.rating}</span>
+              <span>•</span>
+              <span>
+                <Clock size={13} style={{ display: 'inline', marginRight: 4 }} />
+                {watchMovie.duration}
+              </span>
+              <span>
+                <Calendar size={13} style={{ display: 'inline', marginRight: 4 }} />
+                {watchMovie.year}
+              </span>
+              <span className="genre-tag">
+                <Film size={11} style={{ display: 'inline', marginRight: 3 }} />
+                {watchMovie.category}
+              </span>
+            </div>
+
+            <div className="watch-actions">
+              <button
+                className={`btn-watchlist ${isInWatchlist(watchMovie.id) ? 'active' : ''}`}
+                onClick={(e) => handleToggleWatchlist(watchMovie.id, e)}
+              >
+                {isInWatchlist(watchMovie.id) ? <Check size={16} /> : <Plus size={16} />}
+                {isInWatchlist(watchMovie.id) ? 'In My List' : 'Add to My List'}
+              </button>
+            </div>
+
+            <p className="watch-desc">{watchMovie.description}</p>
           </div>
         </div>
 
-        {/* Full-width player */}
-        <div className="watch-player-wrap">
-          <VideoPlayer
-            src={videoSrc}
-            poster={getAssetUrl(watchMovie.thumbnail)}
-            title={watchMovie.title}
-          />
-        </div>
-
-        {/* Details below player */}
-        <div className="watch-details">
-          <h1 className="watch-title">{watchMovie.title}</h1>
-
-          <div className="watch-meta">
-            <span className="rating">★ {watchMovie.rating}</span>
-            <span>•</span>
-            <span>
-              <Clock size={13} style={{ display: 'inline', marginRight: 4 }} />
-              {watchMovie.duration}
-            </span>
-            <span>
-              <Calendar size={13} style={{ display: 'inline', marginRight: 4 }} />
-              {watchMovie.year}
-            </span>
-            <span className="genre-tag">
-              <Film size={11} style={{ display: 'inline', marginRight: 3 }} />
-              {watchMovie.category}
-            </span>
-          </div>
-
-          <div className="watch-actions">
-            <button
-              className={`btn-watchlist ${isInWatchlist(watchMovie.id) ? 'active' : ''}`}
-              onClick={(e) => handleToggleWatchlist(watchMovie.id, e)}
-            >
-              {isInWatchlist(watchMovie.id) ? <Check size={16} /> : <Plus size={16} />}
-              {isInWatchlist(watchMovie.id) ? 'In My List' : 'Add to My List'}
-            </button>
-          </div>
-
-          <p className="watch-desc">{watchMovie.description}</p>
-
-          {/* Similar movies */}
-          {similarMovies.length > 0 && (
-            <>
-              <hr className="watch-divider" />
-              <div className="watch-more-title">More Like This</div>
-              <div className="rail-track" style={{ paddingBottom: '1rem' }}>
-                {similarMovies.map((m) => (
-                  <div
-                    key={m.id}
-                    className="card"
-                    onClick={() => goWatch(m)}
-                  >
-                    <img
-                      className="card-thumb"
-                      src={getAssetUrl(m.thumbnail)}
-                      alt={m.title}
-                      loading="lazy"
-                    />
-                    <div className="card-info">
-                      <div className="card-title">{m.title}</div>
-                      <div className="card-meta">
-                        <span className="star">★</span>
-                        <span>{m.rating}</span>
-                        <span>•</span>
-                        <span>{m.year}</span>
-                      </div>
+        {/* Similar movies */}
+        {similarMovies.length > 0 && (
+          <div className="watch-similar-section">
+            <hr className="watch-divider" />
+            <div className="watch-more-title">More Like This</div>
+            <div className="rail-track" style={{ paddingBottom: '1rem' }}>
+              {similarMovies.map((m) => (
+                <div
+                  key={m.id}
+                  className="card"
+                  onClick={() => goWatch(m)}
+                >
+                  <img
+                    className="card-thumb"
+                    src={getAssetUrl(m.thumbnail)}
+                    alt={m.title}
+                    loading="lazy"
+                  />
+                  <div className="card-info">
+                    <div className="card-title">{m.title}</div>
+                    <div className="card-meta">
+                      <span className="star">★</span>
+                      <span>{m.rating}</span>
+                      <span>•</span>
+                      <span>{m.year}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };

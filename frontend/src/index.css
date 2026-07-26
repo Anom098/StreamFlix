@@ -615,35 +615,60 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
 .watch-page {
   min-height: 100vh;
   background: var(--bg);
-  padding-top: 64px; /* nav height */
+  padding-top: 84px; /* nav height + padding */
 }
 
-/* Movie info shown ABOVE the player */
-.watch-header {
-  padding: 1.2rem 4% 0.8rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
+/* Layout for Player (left) and Text Details (right) */
+.watch-content-layout {
+  display: flex;
+  gap: 3rem;
+  padding: 0 4%;
+  align-items: flex-start;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .watch-content-layout {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
+
+.watch-player-section {
+  flex: 1 1 65%;
+  width: 100%;
 }
 
 .watch-player-wrap {
   width: 100%;
   background: #000;
-  max-height: 80vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border: 1px solid var(--border);
 }
 
 .watch-player-wrap iframe,
 .watch-player-wrap video,
 .watch-player-wrap .video-player-container {
   width: 100%;
-  max-height: 80vh;
+  max-height: 70vh;
 }
 
-.watch-details {
-  padding: 2rem 4%;
-  max-width: 1100px;
+.watch-details-section {
+  flex: 1 1 35%;
+  display: flex;
+  flex-direction: column;
+}
+
+.watch-similar-section {
+  padding: 3rem 4% 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .watch-back {
