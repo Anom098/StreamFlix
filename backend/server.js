@@ -296,6 +296,35 @@ app.post(
   }
 );
 
+// --- Admin Cloudinary Signature Route (For direct client-side uploads) ---
+app.post('/api/admin/cloudinary-signature', requireAdmin, (req, res) => {
+  try {
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const { folder } = req.body;
+    
+    // The params to sign must match exactly what the client sends
+    const paramsToSign = {
+      timestamp: timestamp,
+    };
+    if (folder) paramsToSign.folder = folder;
+
+    const signature = cloudinary.utils.api_sign_request(
+      paramsToSign,
+      process.env.CLOUDINARY_API_SECRET
+    );
+
+    res.json({
+      timestamp,
+      signature,
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY
+    });
+  } catch (error) {
+    console.error('Error generating signature:', error);
+    res.status(500).json({ error: 'Failed to generate signature' });
+  }
+});
+
 // --- Admin URL-only Route (For Google Drive / external video URLs) ---
 app.post('/api/admin/add-url', requireAdmin, (req, res) => {
   const { title, description, category, duration, year, trending, videoUrl, thumbnailUrl } = req.body;
